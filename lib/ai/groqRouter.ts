@@ -133,35 +133,12 @@ export async function groqQuery(
 }
 
 /**
- * Generate text embeddings using GROQ llama-3.1-8b.
- * Used for semantic cache and RAG.
+ * Generate text embeddings.
+ * GROQ does not host an embeddings model, so Layer 2 (semantic cache)
+ * is gracefully disabled — Layer 1 (Redis exact cache) remains active.
+ * Replace this with a real embeddings provider (e.g. HuggingFace) to
+ * re-enable semantic caching.
  */
-export async function generateEmbedding(text: string): Promise<number[]> {
-  // GROQ doesn't have a dedicated embeddings endpoint yet;
-  // use a simple hash-based placeholder when not available.
-  // Replace with actual embeddings API when available.
-  try {
-    // Attempt to use any embeddings endpoint if configured
-    const response = await fetch("https://api.groq.com/openai/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "nomic-embed-text-v1.5",
-        input: text,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.data[0].embedding;
-    }
-  } catch {
-    // Fall through to null embedding
-  }
-
-  // Fallback: return zero vector (disables semantic cache gracefully)
+export async function generateEmbedding(_text: string): Promise<number[]> {
   return new Array(768).fill(0);
 }
