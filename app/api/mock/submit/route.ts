@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/db/supabase-server";
-import { publishJob } from "@/lib/queue/qstash";
+import { generateMockDebrief } from "@/lib/ai/agents/mockDebriefAgent";
+
+export const maxDuration = 60; // allow GROQ time for debrief generation
 import { calculateTotalScore, scoreQuestion } from "@/lib/algorithms/scoring";
 import { predictRank } from "@/lib/algorithms/rankPredictor";
 
@@ -94,23 +96,35 @@ export async function POST(request: NextRequest) {
     .eq("id", session_id)
     .eq("user_id", user.id);
 
-  // Push debrief job to QStash (async)
+  // Generate debrief inline — no QStash needed
+  let debrief: unknown = null;
   const { data: job } = await admin
     .from("llm_jobs")
     .insert({
       user_id: user.id,
       job_type: "mock_debrief",
-      status: "pending",
+      status: "processing",
       input_payload: { session_id } as any,
     })
     .select()
     .single();
 
   if (job) {
-    await publishJob({
-      job_type: "mock_debrief",
-      payload: { job_id: job.id, session_id },
-    });
+    try {
+      debrief = await generateMockDebrief(session_id);
+      await admin.from("mock_sessions").update({ debrief_json: debrief as any }).eq("id", session_id);
+      await admin.from("llm_jobs").update({
+        status: "completed",
+        output_payload: debrief as any,
+        completed_at: new Date().toISOString(),
+      }).eq("id", job.id);
+    } catch (err) {
+      console.error("[mock/submit] debrief failed:", err);
+      await admin.from("llm_jobs").update({
+        status: "failed",
+        completed_at: new Date().toISOString(),
+      }).eq("id", job.id);
+    }
   }
 
   return NextResponse.json({
@@ -118,7 +132,7 @@ export async function POST(request: NextRequest) {
     max_score: maxScore,
     normalized_score: normalizedScore,
     predicted_rank: predictedRank,
-    debrief_job_id: job?.id,
+    debrief,
     breakdown: scoredAnswers.reduce(
       (acc, a) => {
         if (!a) return acc;

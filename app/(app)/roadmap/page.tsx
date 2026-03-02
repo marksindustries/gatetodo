@@ -86,30 +86,15 @@ export default function RoadmapPage() {
     if (res.ok) {
       const data = await res.json();
       setJobId(data.job_id);
+      if (data.roadmap) {
+        // Inline result — no polling needed
+        setRoadmap(data.roadmap);
+        setGenerating(false);
+      }
+    } else {
+      setGenerating(false);
     }
   }
-
-  // Poll for job completion
-  useEffect(() => {
-    if (!generating || !jobId) return;
-
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/roadmap/status?job_id=${jobId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === "completed" && data.roadmap_json) {
-          setRoadmap(data.roadmap_json);
-          setGenerating(false);
-          clearInterval(interval);
-        } else if (data.status === "failed") {
-          setGenerating(false);
-          clearInterval(interval);
-        }
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [generating, jobId]);
 
   useEffect(() => {
     loadRoadmap();

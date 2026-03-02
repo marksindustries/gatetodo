@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/db/supabase-server";
-import { publishJob } from "@/lib/queue/qstash";
+import { generateRoadmap } from "@/lib/ai/agents/roadmapAgent";
 import { incrementCounter } from "@/lib/cache/cacheManager";
+
+export const maxDuration = 60; // allow GROQ 70b time to respond
 
 // Rate limit: 3 roadmap generations per day
 const RATE_LIMIT = 3;
@@ -46,14 +48,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Create a pending job in DB
+  // Create job record (start as processing since we run inline)
   const admin = createAdminClient();
   const { data: job, error } = await admin
     .from("llm_jobs")
     .insert({
       user_id: user.id,
       job_type: "roadmap_gen",
-      status: "pending",
+      status: "processing",
       input_payload: { profile } as any,
     })
     .select()
@@ -63,11 +65,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
   }
 
-  // Push async job to QStash
-  await publishJob({
-    job_type: "roadmap_gen",
-    payload: { job_id: job.id, profile },
-  });
+  // Process inline — no QStash needed
+  try {
+    const roadmap = await generateRoadmap(profile);
 
-  return NextResponse.json({ job_id: job.id });
+    await admin
+      .from("llm_jobs")
+      .update({
+        status: "completed",
+        output_payload: roadmap as any,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+
+    return NextResponse.json({ job_id: job.id, roadmap });
+  } catch (err) {
+    console.error("[roadmap/generate] generation failed:", err);
+    await admin
+      .from("llm_jobs")
+      .update({ status: "failed", completed_at: new Date().toISOString() })
+      .eq("id", job.id);
+    return NextResponse.json(
+      { error: "Roadmap generation failed. Please try again." },
+      { status: 500 }
+    );
+  }
 }

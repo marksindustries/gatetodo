@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react"; // useEffect kept for timer
 import { QuestionNavigator } from "@/components/mock/QuestionNavigator";
 import { VirtualKeypad } from "@/components/mock/VirtualKeypad";
 import { DebriefCard } from "@/components/mock/DebriefCard";
@@ -138,25 +138,11 @@ export default function MockPage() {
       const data = await res.json();
       setResult(data);
       setMockState("debrief");
-
-      // Poll for debrief
-      if (data.debrief_job_id) {
-        setDebriefLoading(true);
-        const pollInterval = setInterval(async () => {
-          const statusRes = await fetch(`/api/roadmap/status?job_id=${data.debrief_job_id}`);
-          if (statusRes.ok) {
-            const statusData = await statusRes.json();
-            if (statusData.status === "completed" && statusData.roadmap_json) {
-              setDebriefData(statusData.roadmap_json);
-              setDebriefLoading(false);
-              clearInterval(pollInterval);
-            } else if (statusData.status === "failed") {
-              setDebriefLoading(false);
-              clearInterval(pollInterval);
-            }
-          }
-        }, 3000);
+      // Debrief is now inline in the submit response
+      if (data.debrief) {
+        setDebriefData(data.debrief);
       }
+      setDebriefLoading(false);
     }
   }
 
