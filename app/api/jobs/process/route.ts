@@ -1,0 +1,80 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createAdminClient } from "@/lib/db/supabase-server";
+import { verifyQStashSignature } from "@/lib/queue/qstash";
+import { generateRoadmap } from "@/lib/ai/agents/roadmapAgent";
+import { generateMockDebrief } from "@/lib/ai/agents/mockDebriefAgent";
+import { runSRScheduler } from "@/lib/ai/agents/srScheduler";
+
+export async function POST(request: NextRequest) {
+  // Verify QStash signature in production
+  if (process.env.NODE_ENV === "production") {
+    const isValid = await verifyQStashSignature(request.clone());
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+  }
+
+  const body = await request.json();
+  const { job_type, payload } = body;
+
+  const supabase = createAdminClient();
+
+  if (job_type === "roadmap_gen") {
+    const { job_id, profile } = payload;
+
+    // Mark as processing
+    await supabase
+      .from("llm_jobs")
+      .update({ status: "processing" })
+      .eq("id", job_id);
+
+    const roadmap = await generateRoadmap(profile);
+
+    // Mark as completed
+    await supabase
+      .from("llm_jobs")
+      .update({
+        status: "completed",
+        output_payload: roadmap as any,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job_id);
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (job_type === "mock_debrief") {
+    const { job_id, session_id } = payload;
+
+    await supabase
+      .from("llm_jobs")
+      .update({ status: "processing" })
+      .eq("id", job_id);
+
+    const debrief = await generateMockDebrief(session_id);
+
+    // Save debrief to mock_sessions
+    await supabase
+      .from("mock_sessions")
+      .update({ debrief_json: debrief as any })
+      .eq("id", session_id);
+
+    await supabase
+      .from("llm_jobs")
+      .update({
+        status: "completed",
+        output_payload: debrief as any,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", job_id);
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (job_type === "sr_scheduler") {
+    const result = await runSRScheduler();
+    return NextResponse.json({ success: true, ...result });
+  }
+
+  return NextResponse.json({ error: "Unknown job type" }, { status: 400 });
+}

@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0e1a;
+  --surface: #111827;
+  --border: #1e293b;
+  --amber: #f59e0b;
+  --emerald: #10b981;
+  --indigo: #818cf8;
+  --danger: #ef4444;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-syne), sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Utility classes */
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.accent-amber { color: var(--amber); }
+.accent-emerald { color: var(--emerald); }
+.accent-indigo { color: var(--indigo); }
+.accent-danger { color: var(--danger); }
+
+.bg-amber { background-color: var(--amber); }
+.bg-emerald { background-color: var(--emerald); }
+.border-amber { border-color: var(--amber); }
+.border-emerald { border-color: var(--emerald); }
+.border-indigo { border-color: var(--indigo); }
+.border-danger { border-color: var(--danger); }
