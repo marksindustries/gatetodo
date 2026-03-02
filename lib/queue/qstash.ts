@@ -17,8 +17,12 @@ export interface QStashJob {
 export async function publishJob(job: QStashJob): Promise<{ messageId: string }> {
   const qstash = getQStash();
 
+  // Prefer the Vercel URL in production; fall back to APP_URL for local dev
+  const baseUrl =
+    process.env.NEXT_PUBLIC_VERCEL_URL ?? process.env.NEXT_PUBLIC_APP_URL!;
+
   const response = await qstash.publishJSON({
-    url: `${process.env.NEXT_PUBLIC_APP_URL}/api/jobs/process`,
+    url: `${baseUrl}/api/jobs/process`,
     body: job,
     retries: 3,
   });

@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+
+export const maxDuration = 60; // extend Vercel timeout to 60s for LLM jobs
 import { createAdminClient } from "@/lib/db/supabase-server";
 import { verifyQStashSignature } from "@/lib/queue/qstash";
 import { generateRoadmap } from "@/lib/ai/agents/roadmapAgent";

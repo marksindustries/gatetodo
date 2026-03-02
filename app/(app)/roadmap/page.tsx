@@ -61,7 +61,7 @@ export default function RoadmapPage() {
     // Check for latest completed roadmap job
     const { data: job } = await supabase
       .from("llm_jobs")
-      .select("status, output_payload")
+      .select("id, status, output_payload")
       .eq("user_id", user.id)
       .eq("job_type", "roadmap_gen")
       .order("created_at", { ascending: false })
@@ -72,6 +72,7 @@ export default function RoadmapPage() {
       setRoadmap(job.output_payload as RoadmapData);
     } else if (job?.status === "pending" || job?.status === "processing") {
       setGenerating(true);
+      setJobId(job.id); // ← fix: without this, polling never starts
     } else {
       // Auto-trigger roadmap generation on first load
       await triggerGeneration();
