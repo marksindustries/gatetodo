@@ -5,6 +5,12 @@ import { createClient } from "@/lib/db/supabase";
 import { useRouter } from "next/navigation";
 import { PLANS } from "@/lib/payments/razorpay";
 
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open(): void };
+  }
+}
+
 interface Profile {
   name: string;
   target_rank: number | null;
@@ -128,6 +134,52 @@ export default function SettingsPage() {
     await supabase.from("user_concept_state").delete().eq("user_id", user.id);
     alert("Progress reset. Starting fresh!");
     router.push("/dashboard");
+  }
+
+  async function handleUpgrade(plan: "monthly" | "annual") {
+    // Load Razorpay checkout script if not already loaded
+    if (!window.Razorpay) {
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("Failed to load Razorpay"));
+        document.body.appendChild(script);
+      });
+    }
+
+    const res = await fetch("/api/subscriptions/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan }),
+    });
+
+    if (!res.ok) {
+      const { error } = await res.json();
+      alert(`Payment setup failed: ${error}`);
+      return;
+    }
+
+    const { subscription_id, key_id } = await res.json();
+
+    const rzp = new window.Razorpay({
+      key: key_id,
+      subscription_id,
+      name: "GATEprep",
+      description: plan === "monthly" ? "Monthly — ₹299/mo" : "Annual — ₹2499/yr",
+      theme: { color: "#f59e0b" },
+      handler: () => {
+        // Webhook handles DB update; optimistically refresh subscription display
+        setSubscription({
+          plan,
+          status: "active",
+          current_period_end: null,
+        });
+        setSection("profile");
+      },
+    });
+
+    rzp.open();
   }
 
   async function handleDeleteAccount() {
@@ -306,7 +358,7 @@ export default function SettingsPage() {
                           fontFamily: "var(--font-ibm-plex-mono)",
                           cursor: "pointer",
                         }}
-                        onClick={() => alert("Connect Razorpay credentials in .env.local to enable payments")}
+                        onClick={() => handleUpgrade(plan)}
                       >
                         Upgrade
                       </button>
