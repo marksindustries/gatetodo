@@ -6,7 +6,7 @@ import { VirtualKeypad } from "@/components/mock/VirtualKeypad";
 import { DebriefCard } from "@/components/mock/DebriefCard";
 import Link from "next/link";
 
-type MockState = "pre-test" | "in-test" | "submitting" | "debrief";
+type MockState = "pre-test" | "starting" | "in-test" | "submitting" | "debrief";
 
 interface MockQuestion {
   id: string;
@@ -73,6 +73,7 @@ export default function MockPage() {
   }
 
   async function startTest() {
+    setMockState("starting");
     const res = await fetch("/api/mock/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -85,6 +86,7 @@ export default function MockPage() {
     if (!res.ok) {
       const err = await res.json();
       alert(err.error);
+      setMockState("pre-test");
       return;
     }
 
@@ -252,6 +254,25 @@ export default function MockPage() {
           >
             Start Test →
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STARTING ──
+  if (mockState === "starting") {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ background: "#0a0e1a" }}>
+        <div className="text-center">
+          <div className="flex gap-1 justify-center mb-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="w-2 h-2 rounded-full"
+                style={{ background: "#f59e0b", animation: `pulse 1s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </div>
+          <p style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "14px" }}>
+            Preparing your test...
+          </p>
         </div>
       </div>
     );

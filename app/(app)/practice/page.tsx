@@ -40,6 +40,7 @@ export default function PracticePage() {
   const [questionType, setQuestionType] = useState<"MCQ" | "NAT">("MCQ");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [showTopicDrawer, setShowTopicDrawer] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -109,6 +110,7 @@ export default function PracticePage() {
     setEvaluationResult(null);
     setExplanation(null);
     setFeedbackSubmitted(false);
+    setErrorMsg(null);
     setPracticeState("loading");
 
     const res = await fetch("/api/questions/generate", {
@@ -121,11 +123,13 @@ export default function PracticePage() {
       }),
     });
 
+    const data = await res.json();
+
     if (res.ok) {
-      const data = await res.json();
       setQuestion(data.question);
       setPracticeState("question");
     } else {
+      setErrorMsg(data.error ?? "Failed to generate question.");
       setPracticeState("idle");
     }
   }
@@ -348,7 +352,31 @@ export default function PracticePage() {
           )}
 
           {/* Question area */}
-          {practiceState === "idle" && (
+          {practiceState === "idle" && errorMsg && (
+            <div
+              className="flex flex-col items-center justify-center h-32 rounded mb-4"
+              style={{ border: "1px solid #ef4444", background: "rgba(239,68,68,0.05)" }}
+            >
+              <p className="text-sm text-center px-4" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                {errorMsg}
+              </p>
+              <button
+                onClick={() => selectedConcept && handleConceptSelect(selectedConcept)}
+                className="mt-3 px-4 py-1.5 rounded text-xs"
+                style={{
+                  background: "transparent",
+                  border: "1px solid #ef4444",
+                  color: "#ef4444",
+                  fontFamily: "var(--font-ibm-plex-mono)",
+                  cursor: "pointer",
+                }}
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {practiceState === "idle" && !errorMsg && (
             <div
               className="flex flex-col items-center justify-center h-96 rounded"
               style={{ border: "1px dashed #1e293b", color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}

@@ -59,6 +59,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const question = await generateQuestion(concept_id, difficulty, type);
-  return NextResponse.json({ question });
+  try {
+    const question = await generateQuestion(concept_id, difficulty, type);
+    return NextResponse.json({ question });
+  } catch (err: any) {
+    console.error("[questions/generate]", err);
+    const msg =
+      err?.status === 429
+        ? "AI is busy — please wait a moment and try again."
+        : "Failed to generate question. Please try again.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
