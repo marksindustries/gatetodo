@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerSupabaseClient, createAdminClient } from "@/lib/db/supabase-server";
 import { generateMockDebrief } from "@/lib/ai/agents/mockDebriefAgent";
-
-export const maxDuration = 60; // allow GROQ time for debrief generation
 import { calculateTotalScore, scoreQuestion } from "@/lib/algorithms/scoring";
 import { predictRank } from "@/lib/algorithms/rankPredictor";
+
+export const maxDuration = 60; // allow GROQ time for debrief generation
 
 interface SubmittedAnswer {
   question_id: string;
