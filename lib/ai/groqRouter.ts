@@ -17,19 +17,22 @@ export const MODELS = {
 export const TOKEN_CAPS: Record<string, { input: number; output: number }> = {
   question_generation: { input: 400, output: 350 },
   concept_explanation: { input: 300, output: 400 },
-  roadmap_generation: { input: 600, output: 700 },
+  roadmap_generation: { input: 800, output: 1400 },
   mock_debrief: { input: 500, output: 500 },
   ai_tutor: { input: 400, output: 300 },
   difficulty_classify: { input: 100, output: 50 },
 };
 
-let groqClient: Groq | null = null;
+let groqClients: Groq[] | null = null;
+let callCounter = 0;
 
 function getGroq(): Groq {
-  if (!groqClient) {
-    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY! });
+  if (!groqClients) {
+    groqClients = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2]
+      .filter(Boolean)
+      .map((key) => new Groq({ apiKey: key! }));
   }
-  return groqClient;
+  return groqClients[callCounter++ % groqClients.length];
 }
 
 interface GroqRouterOptions {

@@ -22,23 +22,29 @@ export async function POST(request: NextRequest) {
   if (job_type === "roadmap_gen") {
     const { job_id, profile } = payload;
 
-    // Mark as processing
     await supabase
       .from("llm_jobs")
       .update({ status: "processing" })
       .eq("id", job_id);
 
-    const roadmap = await generateRoadmap(profile);
+    try {
+      const roadmap = await generateRoadmap(profile);
 
-    // Mark as completed
-    await supabase
-      .from("llm_jobs")
-      .update({
-        status: "completed",
-        output_payload: roadmap as any,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", job_id);
+      await supabase
+        .from("llm_jobs")
+        .update({
+          status: "completed",
+          output_payload: roadmap as any,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", job_id);
+    } catch (err) {
+      console.error("[jobs/process] roadmap_gen failed:", err);
+      await supabase
+        .from("llm_jobs")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", job_id);
+    }
 
     return NextResponse.json({ success: true });
   }
@@ -51,22 +57,29 @@ export async function POST(request: NextRequest) {
       .update({ status: "processing" })
       .eq("id", job_id);
 
-    const debrief = await generateMockDebrief(session_id);
+    try {
+      const debrief = await generateMockDebrief(session_id);
 
-    // Save debrief to mock_sessions
-    await supabase
-      .from("mock_sessions")
-      .update({ debrief_json: debrief as any })
-      .eq("id", session_id);
+      await supabase
+        .from("mock_sessions")
+        .update({ debrief_json: debrief as any })
+        .eq("id", session_id);
 
-    await supabase
-      .from("llm_jobs")
-      .update({
-        status: "completed",
-        output_payload: debrief as any,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", job_id);
+      await supabase
+        .from("llm_jobs")
+        .update({
+          status: "completed",
+          output_payload: debrief as any,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", job_id);
+    } catch (err) {
+      console.error("[jobs/process] mock_debrief failed:", err);
+      await supabase
+        .from("llm_jobs")
+        .update({ status: "failed", completed_at: new Date().toISOString() })
+        .eq("id", job_id);
+    }
 
     return NextResponse.json({ success: true });
   }
