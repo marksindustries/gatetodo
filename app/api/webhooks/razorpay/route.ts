@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/supabase-server";
-import { verifyWebhookSignature } from "@/lib/payments/razorpay";
+import { verifyWebhookSignature, PLANS } from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -21,6 +21,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !plan || (plan !== "monthly" && plan !== "annual")) {
       return NextResponse.json({ received: true });
+    }
+
+    // Verify the captured amount matches our expected plan price.
+    // Prevents paying ₹1 with plan="annual" in notes to get a free subscription.
+    const expectedAmount = PLANS[plan as keyof typeof PLANS].amount;
+    if (payment.amount !== expectedAmount || payment.currency !== "INR") {
+      console.error(
+        `[webhook] Amount mismatch for plan=${plan}: expected ${expectedAmount} paise, got ${payment.amount} ${payment.currency} (payment=${payment.id})`
+      );
+      return NextResponse.json({ received: true }); // Return 200 so Razorpay doesn't retry
     }
 
     const periodEnd = plan === "monthly"

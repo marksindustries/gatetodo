@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   } catch (err: any) {
     console.error("[subscriptions/create]", err);
     return NextResponse.json(
-      { error: err?.message ?? "Failed to create order" },
+      { error: "Failed to create payment order. Please try again." },
       { status: 500 }
     );
   }
