@@ -8,11 +8,18 @@ import {
   semanticCacheSet,
 } from "@/lib/cache/cacheManager";
 
-// ─── Model definitions ───
-export const MODELS = {
-  cheap: "llama-3.1-8b-instant",           // classification, tags, yes/no
-  generation: "meta-llama/llama-4-scout-17b-16e-instruct", // Llama 4, 17B, fast + reliable JSON
-} as const;
+// ─── Model cascade ───
+// For "generation" tasks we try models in order until one succeeds.
+// Llama 4 Scout: fast (2-4s), Llama 4 architecture, great JSON reliability.
+// Falls back to 70B (proven), then 8B (last resort).
+const MODEL_CASCADE: Record<"cheap" | "generation", string[]> = {
+  cheap: ["llama-3.1-8b-instant"],
+  generation: [
+    "meta-llama/llama-4-scout-17b-16e-instruct", // Llama 4, 17B, fast
+    "llama-3.3-70b-versatile",                    // proven fallback
+    "llama-3.1-8b-instant",                       // last resort
+  ],
+};
 
 // ─── Token caps per task type ───
 export const TOKEN_CAPS: Record<string, { input: number; output: number }> = {
@@ -23,6 +30,12 @@ export const TOKEN_CAPS: Record<string, { input: number; output: number }> = {
   ai_tutor:            { input: 400, output: 400 },
   difficulty_classify: { input: 100, output: 50 },
 };
+
+// For backwards-compat — keeps MODELS export working for any imports
+export const MODELS = {
+  cheap: "llama-3.1-8b-instant",
+  generation: "meta-llama/llama-4-scout-17b-16e-instruct",
+} as const;
 
 // ─── Key loading: supports GROQ_API_KEY_1, GROQ_API_KEY_2, ... fallback to GROQ_API_KEY ───
 function loadKeys(): string[] {
@@ -35,7 +48,6 @@ function loadKeys(): string[] {
 }
 
 // ─── Redis atomic counter — persists across serverless cold starts ───
-// Each call to groqQuery picks the next key globally, giving true round-robin.
 async function getStartIndex(numKeys: number): Promise<number> {
   if (numKeys <= 1) return 0;
   try {
@@ -53,7 +65,7 @@ async function getStartIndex(numKeys: number): Promise<number> {
 interface GroqRouterOptions {
   taskType: keyof typeof TOKEN_CAPS;
   model?: "cheap" | "generation";
-  /** Pass embedding to enable semantic cache (Layer 2). If omitted, only Redis cache is checked. */
+  /** Pass embedding to enable semantic cache (Layer 2). */
   embedding?: number[];
   /** Skip cache layers entirely (useful for force-regeneration) */
   skipCache?: boolean;
@@ -63,7 +75,7 @@ interface GroqRouterOptions {
  * 3-layer GROQ router:
  *   Layer 1 → Upstash Redis exact cache (prompt_hash → response, TTL 24h)
  *   Layer 2 → pgvector semantic cache (embedding similarity > 0.92)
- *   Layer 3 → GROQ API call with Redis round-robin key rotation
+ *   Layer 3 → GROQ API with round-robin key rotation + model cascade fallback
  *
  * All prompts must return ONLY valid JSON.
  */
@@ -73,15 +85,12 @@ export async function groqQuery(
 ): Promise<unknown> {
   const { taskType, model = "generation", embedding, skipCache = false } = options;
   const promptHash = hashPrompt(prompt);
-  const modelId = MODELS[model];
   const caps = TOKEN_CAPS[taskType];
 
   // ── Layer 1: Redis exact cache ──
   if (!skipCache) {
     const cached = await redisGet(promptHash);
-    if (cached) {
-      return JSON.parse(cached);
-    }
+    if (cached) return JSON.parse(cached);
   }
 
   // ── Layer 2: pgvector semantic cache ──
@@ -93,64 +102,70 @@ export async function groqQuery(
     }
   }
 
-  // ── Layer 3: GROQ API call with round-robin key rotation ──
-  const params = {
-    model: modelId,
-    messages: [
-      {
-        role: "system" as const,
-        content:
-          "You are a GATE CS exam question expert. Always return ONLY valid JSON. No preamble, no markdown, no explanation outside JSON.",
-      },
-      { role: "user" as const, content: prompt },
-    ],
-    max_tokens: caps.output,
-    temperature: 0.3,
-    response_format: { type: "json_object" as const },
-  };
-
+  // ── Layer 3: GROQ API — model cascade + round-robin key rotation ──
   const keys = loadKeys();
   const startIndex = await getStartIndex(keys.length);
+  const modelsToTry = MODEL_CASCADE[model];
 
   let response: Groq.Chat.Completions.ChatCompletion | undefined;
-  let lastErr: unknown;
+  let modelUsed = modelsToTry[0];
+  let overallLastErr: unknown;
 
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const keyIndex = (startIndex + attempt) % keys.length;
-    try {
-      const groq = new Groq({ apiKey: keys[keyIndex] });
-      response = await groq.chat.completions.create(params);
-      lastErr = undefined;
-      break;
-    } catch (err: any) {
-      lastErr = err;
-      if (err?.status === 429 || err?.status === 401) {
-        continue; // rotate to next key immediately
+  for (const modelId of modelsToTry) {
+    let modelSucceeded = false;
+    let lastErr: unknown;
+
+    for (let attempt = 0; attempt < Math.max(keys.length, 1); attempt++) {
+      const keyIndex = (startIndex + attempt) % keys.length;
+      try {
+        const groq = new Groq({ apiKey: keys[keyIndex] });
+        response = await groq.chat.completions.create({
+          model: modelId,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a GATE CS exam question expert. Always return ONLY valid JSON. No preamble, no markdown, no explanation outside JSON.",
+            },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: caps.output,
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+        });
+        modelUsed = modelId;
+        modelSucceeded = true;
+        lastErr = undefined;
+        break;
+      } catch (err: any) {
+        lastErr = err;
+        if (err?.status === 429 || err?.status === 401) {
+          continue; // rotate to next key
+        }
+        break; // model-level error (400, 404) — skip to next model
       }
-      throw err; // non-rate-limit errors propagate immediately
     }
+
+    if (modelSucceeded) break;
+    overallLastErr = lastErr;
   }
 
-  if (lastErr) throw lastErr;
+  if (!response) throw overallLastErr ?? new Error("All GROQ models failed");
 
-  const raw = response!.choices[0]?.message?.content ?? "{}";
-  const tokensUsed = response!.usage?.total_tokens ?? 0;
+  const raw = response.choices[0]?.message?.content ?? "{}";
+  const tokensUsed = response.usage?.total_tokens ?? 0;
 
-  // Store in Redis (Layer 1)
   await redisSet(promptHash, raw);
-
-  // Store in pgvector semantic cache (Layer 2) if embedding provided
   if (embedding) {
-    await semanticCacheSet(promptHash, embedding, raw, modelId, tokensUsed);
+    await semanticCacheSet(promptHash, embedding, raw, modelUsed, tokensUsed);
   }
 
   return JSON.parse(raw);
 }
 
 /**
- * Generate text embeddings.
- * GROQ does not host an embeddings model, so Layer 2 (semantic cache)
- * is gracefully disabled — Layer 1 (Redis exact cache) remains active.
+ * Embeddings stub — GROQ doesn't host embedding models.
+ * Layer 2 (semantic cache) is gracefully disabled.
  */
 export async function generateEmbedding(_text: string): Promise<number[]> {
   return new Array(768).fill(0);
