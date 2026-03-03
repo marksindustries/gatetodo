@@ -186,11 +186,14 @@ export default function SettingsPage() {
     if (!confirm("This will permanently delete your account and all data. There is no undo.")) return;
     if (!confirm("Last chance — are you absolutely sure?")) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.auth.signOut();
-    router.push("/login");
+    const res = await fetch("/api/user/delete", { method: "DELETE" });
+    if (res.ok) {
+      await supabase.auth.signOut();
+      router.push("/login");
+    } else {
+      const { error } = await res.json();
+      alert(`Failed to delete account: ${error}`);
+    }
   }
 
   return (

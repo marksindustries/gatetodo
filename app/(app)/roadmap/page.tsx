@@ -42,7 +42,6 @@ export default function RoadmapPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [jobId, setJobId] = useState<string | null>(null);
   const [currentPhase, setCurrentPhase] = useState(0);
   const supabase = createClient();
 
@@ -70,11 +69,9 @@ export default function RoadmapPage() {
 
     if (job?.status === "completed" && job.output_payload) {
       setRoadmap(job.output_payload as RoadmapData);
-    } else if (job?.status === "pending" || job?.status === "processing") {
-      setGenerating(true);
-      setJobId(job.id); // ← fix: without this, polling never starts
     } else {
-      // Auto-trigger roadmap generation on first load
+      // Any non-completed status (pending, processing, failed, or no job):
+      // roadmapAgent has archetype_hash cache so returns instantly if profile unchanged
       await triggerGeneration();
     }
     setLoading(false);
@@ -85,15 +82,11 @@ export default function RoadmapPage() {
     const res = await fetch("/api/roadmap/generate", { method: "POST" });
     if (res.ok) {
       const data = await res.json();
-      setJobId(data.job_id);
       if (data.roadmap) {
-        // Inline result — no polling needed
         setRoadmap(data.roadmap);
-        setGenerating(false);
       }
-    } else {
-      setGenerating(false);
     }
+    setGenerating(false);
   }
 
   useEffect(() => {
