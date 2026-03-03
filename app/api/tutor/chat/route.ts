@@ -12,14 +12,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check subscription for rate limits
+  // Check subscription for rate limits — access expires when current_period_end passes
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select("current_period_end")
     .eq("user_id", user.id)
     .single();
 
-  const isPaid = sub?.plan !== "free" && sub?.status === "active";
+  const isPaid = sub?.current_period_end
+    ? new Date(sub.current_period_end) > new Date()
+    : false;
   const rateLimit = isPaid ? 100 : 30;
 
   // Rate limit per hour

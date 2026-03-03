@@ -22,14 +22,16 @@ export async function POST(request: NextRequest) {
     subject?: string;
   };
 
-  // Check feature gates
+  // Check feature gates — access expires when current_period_end passes, no cron needed
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select("current_period_end")
     .eq("user_id", user.id)
     .single();
 
-  const isPaid = sub?.plan !== "free" && sub?.status === "active";
+  const isPaid = sub?.current_period_end
+    ? new Date(sub.current_period_end) > new Date()
+    : false;
 
   if (type === "full" && !isPaid) {
     return NextResponse.json(

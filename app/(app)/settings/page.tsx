@@ -329,26 +329,51 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold font-syne mb-4" style={{ color: "#f1f5f9" }}>
               Current Plan
             </h2>
-            <div className="flex items-center gap-3 mb-4">
-              <span
-                className="px-3 py-1 rounded text-sm font-bold uppercase"
-                style={{
-                  background: subscription?.plan === "free" ? "rgba(71,85,105,0.3)" : "rgba(245,158,11,0.2)",
-                  border: `1px solid ${subscription?.plan === "free" ? "#475569" : "#f59e0b"}`,
-                  color: subscription?.plan === "free" ? "#94a3b8" : "#f59e0b",
-                  fontFamily: "var(--font-ibm-plex-mono)",
-                }}
-              >
-                {subscription?.plan ?? "free"}
-              </span>
-              <span className="text-xs" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
-                {subscription?.status === "active" ? "Active" : subscription?.status}
-                {subscription?.current_period_end &&
-                  ` · Renews ${new Date(subscription.current_period_end).toLocaleDateString()}`}
-              </span>
-            </div>
+            {(() => {
+              const periodEnd = subscription?.current_period_end
+                ? new Date(subscription.current_period_end)
+                : null;
+              const isActive = periodEnd ? periodEnd > new Date() : false;
+              const isExpired = periodEnd ? periodEnd <= new Date() : false;
 
-            {subscription?.plan === "free" && (
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span
+                      className="px-3 py-1 rounded text-sm font-bold uppercase"
+                      style={{
+                        background: isActive ? "rgba(16,185,129,0.15)" : "rgba(71,85,105,0.3)",
+                        border: `1px solid ${isActive ? "#10b981" : "#475569"}`,
+                        color: isActive ? "#10b981" : "#94a3b8",
+                        fontFamily: "var(--font-ibm-plex-mono)",
+                      }}
+                    >
+                      {isActive ? "PAID" : isExpired ? "EXPIRED" : "FREE"}
+                    </span>
+                    {isActive && periodEnd && (
+                      <span className="text-xs" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                        {subscription?.plan === "monthly" ? "Monthly" : "Annual"} · Access until{" "}
+                        <span style={{ color: "#f59e0b" }}>
+                          {periodEnd.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </span>
+                      </span>
+                    )}
+                    {isExpired && periodEnd && (
+                      <span className="text-xs" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                        Expired {periodEnd.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const periodEnd = subscription?.current_period_end
+                ? new Date(subscription.current_period_end)
+                : null;
+              const showUpgrade = !periodEnd || periodEnd <= new Date();
+              return showUpgrade ? (
               <div className="space-y-3">
                 <p className="text-xs" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
                   Upgrade to unlock unlimited practice, full mock tests, and advanced analytics.
@@ -386,7 +411,8 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
-            )}
+              ) : null;
+            })()}
           </div>
         </div>
       )}
