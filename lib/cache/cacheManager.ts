@@ -21,8 +21,12 @@ export function hashPrompt(prompt: string): string {
 // ─── Layer 1: Redis exact cache ───
 export async function redisGet(promptHash: string): Promise<string | null> {
   try {
-    const result = await getRedis().get<string>(`llm:${promptHash}`);
-    return result ?? null;
+    const result = await getRedis().get(`llm:${promptHash}`);
+    if (result === null || result === undefined) return null;
+    // Upstash SDK auto-deserializes valid JSON on read — normalize back to string
+    // so callers can always do JSON.parse(cached) safely.
+    if (typeof result !== "string") return JSON.stringify(result);
+    return result;
   } catch {
     return null;
   }
