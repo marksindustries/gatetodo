@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from "@/lib/db/supabase-server";
 import { generateQuestion } from "@/lib/ai/agents/questionGenerator";
 import { incrementCounter } from "@/lib/cache/cacheManager";
 
+export const maxDuration = 30; // 8B model needs ~2s; 30s covers retries + cold start
+
 // Rate limit: 60 requests per hour per user
 const RATE_LIMIT = 60;
 const WINDOW_SECONDS = 3600;

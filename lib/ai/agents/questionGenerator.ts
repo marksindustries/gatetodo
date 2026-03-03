@@ -49,7 +49,13 @@ export async function generateQuestion(
   const prompt = buildQuestionPrompt(concept, difficulty, questionType);
   const result = (await groqQuery(prompt, {
     taskType: "question_generation",
-    model: "generation",
+    model: "cheap", // llama-3.1-8b-instant: ~1-2s, handles structured JSON reliably
+    systemPrompt:
+      "You are a GATE CS exam question generator. " +
+      "Return ONLY a valid JSON object — no markdown, no code fences, no extra text. " +
+      "Follow the exact JSON schema in the prompt precisely. " +
+      "MCQ: provide 4 distinct plausible options with exactly one correct answer. " +
+      "NAT: the answer must be an exact number (integer or up to 2 decimal places).",
   })) as {
     question: string;
     options: { A: string; B: string; C: string; D: string } | null;

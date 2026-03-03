@@ -69,6 +69,8 @@ interface GroqRouterOptions {
   embedding?: number[];
   /** Skip cache layers entirely (useful for force-regeneration) */
   skipCache?: boolean;
+  /** Override the system prompt for this specific task */
+  systemPrompt?: string;
 }
 
 /**
@@ -83,7 +85,7 @@ export async function groqQuery(
   prompt: string,
   options: GroqRouterOptions
 ): Promise<unknown> {
-  const { taskType, model = "generation", embedding, skipCache = false } = options;
+  const { taskType, model = "generation", embedding, skipCache = false, systemPrompt } = options;
   const promptHash = hashPrompt(prompt);
   const caps = TOKEN_CAPS[taskType];
 
@@ -124,7 +126,7 @@ export async function groqQuery(
           messages: [
             {
               role: "system",
-              content:
+              content: systemPrompt ??
                 "You are a GATE CS exam question expert. Always return ONLY valid JSON. No preamble, no markdown, no explanation outside JSON.",
             },
             { role: "user", content: prompt },
