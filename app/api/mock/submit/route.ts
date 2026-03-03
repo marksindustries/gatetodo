@@ -19,21 +19,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { session_id, answers, time_taken_sec } = body as {
-    session_id: string;
-    answers: SubmittedAnswer[];
-    time_taken_sec: number;
-  };
+  let body: { session_id: string; answers: SubmittedAnswer[]; time_taken_sec: number };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  const { session_id, answers, time_taken_sec } = body;
 
   // Fetch all question answers from DB
   const questionIds = answers.map((a) => a.question_id);
   const { data: questions } = await supabase
     .from("generated_questions")
-    .select("id, answer, marks, concept_id")
+    .select("id, answer, marks, concept_id, question_type")
     .in("id", questionIds);
 
-  if (!questions) {
+  if (!questions || questions.length === 0) {
     return NextResponse.json({ error: "Questions not found" }, { status: 404 });
   }
 
@@ -45,11 +46,11 @@ export async function POST(request: NextRequest) {
     if (!q) return null;
 
     let status: "correct" | "wrong" | "skipped" = "skipped";
-    if (a.answer !== null) {
-      const isCorrect =
-        q.marks === 1
-          ? a.answer.trim().toUpperCase() === q.answer.trim().toUpperCase()
-          : Math.abs(parseFloat(a.answer) - parseFloat(q.answer)) <= 0.001;
+    if (a.answer !== null && q.answer != null) {
+      const isNAT = q.question_type === "NAT";
+      const isCorrect = isNAT
+        ? Math.abs(parseFloat(a.answer) - parseFloat(q.answer)) <= 0.001
+        : a.answer.trim().toUpperCase() === q.answer.trim().toUpperCase();
       status = isCorrect ? "correct" : "wrong";
     }
 
@@ -81,7 +82,9 @@ export async function POST(request: NextRequest) {
       selected_answer: answers.find((ans) => ans.question_id === a!.question_id)?.answer ?? null,
     }));
 
-  await admin.from("user_attempts").insert(attemptInserts);
+  if (attemptInserts.length > 0) {
+    await admin.from("user_attempts").insert(attemptInserts);
+  }
 
   // Update mock session
   await admin

@@ -50,19 +50,20 @@ export default function PracticePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch all concepts
-      const { data: concepts } = await supabase
-        .from("concepts")
-        .select("*")
-        .order("subject");
+      const today = new Date().toISOString().split("T")[0];
+
+      // Fetch all three in parallel
+      const [
+        { data: concepts },
+        { data: states },
+        { data: todayAttempts },
+      ] = await Promise.all([
+        supabase.from("concepts").select("*").order("subject"),
+        supabase.from("user_concept_state").select("concept_id, mastery_score, next_review").eq("user_id", user.id),
+        supabase.from("user_attempts").select("is_correct").eq("user_id", user.id).gte("attempted_at", today),
+      ]);
 
       if (!concepts) return;
-
-      // Fetch user mastery states
-      const { data: states } = await supabase
-        .from("user_concept_state")
-        .select("concept_id, mastery_score, next_review")
-        .eq("user_id", user.id);
 
       const masteryMap = new Map(
         (states ?? []).map((s) => [s.concept_id, s])
@@ -84,14 +85,6 @@ export default function PracticePage() {
         tree[concept.subject][concept.topic].push(enriched);
       }
       setConceptTree(tree);
-
-      // Session stats
-      const today = new Date().toISOString().split("T")[0];
-      const { data: todayAttempts } = await supabase
-        .from("user_attempts")
-        .select("is_correct")
-        .eq("user_id", user.id)
-        .gte("attempted_at", today);
 
       const total = todayAttempts?.length ?? 0;
       const correct = todayAttempts?.filter((a) => a.is_correct).length ?? 0;

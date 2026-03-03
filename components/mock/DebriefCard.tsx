@@ -56,7 +56,7 @@ export function DebriefCard({ data, loading }: DebriefCardProps) {
             WEAK AREAS THIS TEST
           </p>
           <ul className="space-y-1">
-            {data.weak_areas.map((area, i) => (
+            {(Array.isArray(data.weak_areas) ? data.weak_areas : []).map((area, i) => (
               <li
                 key={i}
                 className="text-xs flex gap-2"
@@ -74,7 +74,7 @@ export function DebriefCard({ data, loading }: DebriefCardProps) {
             WHAT TO FOCUS ON THIS WEEK
           </p>
           <ul className="space-y-1">
-            {data.focus_this_week.map((item, i) => (
+            {(Array.isArray(data.focus_this_week) ? data.focus_this_week : []).map((item, i) => (
               <li
                 key={i}
                 className="text-xs flex gap-2"

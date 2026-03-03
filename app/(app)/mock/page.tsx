@@ -143,6 +143,10 @@ export default function MockPage() {
         setDebriefData(data.debrief);
       }
       setDebriefLoading(false);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error ?? "Failed to submit test. Please try again.");
+      setMockState("in-test");
     }
   }
 

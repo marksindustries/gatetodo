@@ -54,18 +54,15 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch profile for name and exam date
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name, exam_month")
-        .eq("id", user.id)
-        .single();
+      // Fetch profile and analytics in parallel
+      const [{ data: profile }, res] = await Promise.all([
+        supabase.from("profiles").select("name, exam_month").eq("id", user.id).single(),
+        fetch("/api/analytics/summary?period=30d"),
+      ]);
 
       if (profile?.name) setUserName(profile.name.split(" ")[0]);
       if (profile?.exam_month) setExamDate(new Date(profile.exam_month));
 
-      // Fetch dashboard summary
-      const res = await fetch("/api/analytics/summary?period=30d");
       if (res.ok) {
         const json = await res.json();
         setData(json);
