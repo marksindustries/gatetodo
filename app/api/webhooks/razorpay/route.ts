@@ -13,55 +13,30 @@ export async function POST(request: NextRequest) {
   const event = JSON.parse(body);
   const supabase = createAdminClient();
 
-  const subscriptionId = event?.payload?.subscription?.entity?.id;
-  const userId = event?.payload?.subscription?.entity?.notes?.user_id;
+  // Order-based payment flow
+  if (event.event === "payment.captured") {
+    const payment = event?.payload?.payment?.entity;
+    const userId = payment?.notes?.user_id;
+    const plan = payment?.notes?.plan;
 
-  if (!userId || !subscriptionId) {
-    return NextResponse.json({ received: true });
-  }
-
-  switch (event.event) {
-    case "subscription.activated": {
-      const plan =
-        event.payload.subscription.entity.plan_id.includes("yearly")
-          ? "annual"
-          : "monthly";
-      const periodEnd = new Date(
-        event.payload.subscription.entity.current_end * 1000
-      ).toISOString();
-
-      await supabase.from("subscriptions").upsert(
-        {
-          user_id: userId,
-          plan,
-          status: "active",
-          razorpay_subscription_id: subscriptionId,
-          current_period_end: periodEnd,
-        },
-        { onConflict: "user_id" }
-      );
-      break;
+    if (!userId || !plan || (plan !== "monthly" && plan !== "annual")) {
+      return NextResponse.json({ received: true });
     }
 
-    case "subscription.cancelled":
-    case "subscription.expired": {
-      await supabase
-        .from("subscriptions")
-        .update({ status: event.event === "subscription.cancelled" ? "cancelled" : "expired" })
-        .eq("razorpay_subscription_id", subscriptionId);
-      break;
-    }
+    const periodEnd = plan === "monthly"
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    case "subscription.charged": {
-      const periodEnd = new Date(
-        event.payload.subscription.entity.current_end * 1000
-      ).toISOString();
-      await supabase
-        .from("subscriptions")
-        .update({ status: "active", current_period_end: periodEnd })
-        .eq("razorpay_subscription_id", subscriptionId);
-      break;
-    }
+    await supabase.from("subscriptions").upsert(
+      {
+        user_id: userId,
+        plan,
+        status: "active",
+        razorpay_subscription_id: payment.id,
+        current_period_end: periodEnd,
+      },
+      { onConflict: "user_id" }
+    );
   }
 
   return NextResponse.json({ received: true });

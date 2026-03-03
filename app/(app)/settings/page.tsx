@@ -160,22 +160,39 @@ export default function SettingsPage() {
       return;
     }
 
-    const { subscription_id, key_id } = await res.json();
+    const { order_id, amount, currency, key_id } = await res.json();
 
     const rzp = new window.Razorpay({
       key: key_id,
-      subscription_id,
+      order_id,
+      amount,
+      currency,
       name: "GATEprep",
       description: plan === "monthly" ? "Monthly — ₹299/mo" : "Annual — ₹2499/yr",
       theme: { color: "#f59e0b" },
-      handler: () => {
-        // Webhook handles DB update; optimistically refresh subscription display
-        setSubscription({
-          plan,
-          status: "active",
-          current_period_end: null,
+      handler: async (response: {
+        razorpay_payment_id: string;
+        razorpay_order_id: string;
+        razorpay_signature: string;
+      }) => {
+        // Verify payment server-side and activate subscription
+        const verifyRes = await fetch("/api/subscriptions/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            plan,
+          }),
         });
-        setSection("profile");
+
+        if (verifyRes.ok) {
+          setSubscription({ plan, status: "active", current_period_end: null });
+          setSection("profile");
+        } else {
+          alert("Payment received but activation failed. Contact support.");
+        }
       },
     });
 
