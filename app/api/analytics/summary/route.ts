@@ -70,16 +70,23 @@ export async function GET(request: NextRequest) {
     score: m.max_score > 0 ? Math.round((m.total_score / m.max_score) * 100) : 0,
   }));
 
-  return NextResponse.json({
-    stats: {
-      masteredCount,
-      accuracy: accuracy.accuracy,
-      streak,
-      predictedRank,
+  return NextResponse.json(
+    {
+      stats: {
+        masteredCount,
+        accuracy: accuracy.accuracy,
+        streak,
+        predictedRank,
+      },
+      subjectMastery,
+      weakConcepts,
+      dueToday,
+      scoreTrend,
     },
-    subjectMastery,
-    weakConcepts,
-    dueToday,
-    scoreTrend,
-  });
+    {
+      headers: {
+        "Cache-Control": "private, max-age=300, stale-while-revalidate=60",
+      },
+    }
+  );
 }

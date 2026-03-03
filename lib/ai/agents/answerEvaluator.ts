@@ -25,6 +25,8 @@ interface EvaluateInput {
   timeTakenSec?: number;
   /** SM-2 quality override for correct answers (from UI feedback buttons) */
   sm2Quality?: SM2Quality;
+  /** When true, skip inserting a user_attempts row (used for feedback-only SM-2 updates) */
+  skipAttemptInsert?: boolean;
 }
 
 interface EvaluateResult {
@@ -37,7 +39,7 @@ interface EvaluateResult {
 
 export async function evaluateAnswer(input: EvaluateInput): Promise<EvaluateResult> {
   const supabase = createAdminClient();
-  const { questionId, userAnswer, userId, timeTakenSec, sm2Quality } = input;
+  const { questionId, userAnswer, userId, timeTakenSec, sm2Quality, skipAttemptInsert = false } = input;
 
   // Fetch question from DB
   const { data: question, error: qErr } = await supabase
@@ -62,15 +64,17 @@ export async function evaluateAnswer(input: EvaluateInput): Promise<EvaluateResu
     }
   }
 
-  // ── Save attempt ──
-  await supabase.from("user_attempts").insert({
-    user_id: userId,
-    question_id: questionId,
-    concept_id: question.concept_id,
-    is_correct: isCorrect,
-    time_taken_sec: timeTakenSec,
-    selected_answer: userAnswer,
-  });
+  // ── Save attempt (skipped for feedback-only SM-2 updates) ──
+  if (!skipAttemptInsert) {
+    await supabase.from("user_attempts").insert({
+      user_id: userId,
+      question_id: questionId,
+      concept_id: question.concept_id,
+      is_correct: isCorrect,
+      time_taken_sec: timeTakenSec,
+      selected_answer: userAnswer,
+    });
+  }
 
   // ── Fetch or create SM-2 state ──
   const { data: existingState } = await supabase

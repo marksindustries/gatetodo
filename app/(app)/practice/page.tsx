@@ -158,6 +158,26 @@ export default function PracticePage() {
       setRecentAttempts((prev) => [data.correct, ...prev].slice(0, 5));
       setPracticeState("revealed");
 
+      // Patch sidebar mastery immediately so the badge updates without a page reload
+      if (selectedConcept) {
+        const newMastery = data.sm2Update.mastery_score;
+        setSelectedConcept((prev) => prev ? { ...prev, mastery_score: newMastery } : prev);
+        setConceptTree((prev) => {
+          const s = selectedConcept.subject;
+          const t = selectedConcept.topic;
+          if (!prev[s]?.[t]) return prev;
+          return {
+            ...prev,
+            [s]: {
+              ...prev[s],
+              [t]: prev[s][t].map((c) =>
+                c.id === selectedConcept.id ? { ...c, mastery_score: newMastery } : c
+              ),
+            },
+          };
+        });
+      }
+
       // Update session stats
       setSessionStats((prev) => ({
         questionsToday: prev.questionsToday + 1,
@@ -180,6 +200,7 @@ export default function PracticePage() {
         question_id: question.id,
         user_answer: evaluationResult?.correctAnswer ?? "",
         sm2_quality: qualityMap[feedback],
+        skip_attempt: true,
       }),
     });
   }

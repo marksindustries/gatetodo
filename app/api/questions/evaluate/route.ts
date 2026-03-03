@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { question_id, user_answer, time_taken_sec, sm2_quality } = body;
+  const { question_id, user_answer, time_taken_sec, sm2_quality, skip_attempt } = body;
 
   if (!question_id || user_answer === undefined) {
     return NextResponse.json(
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     userId: user.id,
     timeTakenSec: time_taken_sec,
     sm2Quality: sm2_quality as SM2Quality | undefined,
+    skipAttemptInsert: skip_attempt === true,
   });
 
   return NextResponse.json(result);
