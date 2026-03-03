@@ -8,8 +8,22 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error && data.user) {
+      // Check if this user has completed onboarding (has a profile row).
+      // Google OAuth creates the auth account instantly — new users have no profile yet.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .single();
+
+      if (!profile) {
+        // First-time Google sign-in → collect user info
+        return NextResponse.redirect(`${origin}/onboarding`);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
