@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/db/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/db/supabase-server";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -11,9 +11,10 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
-      // Check if this user has completed onboarding (has a profile row).
-      // Google OAuth creates the auth account instantly — new users have no profile yet.
-      const { data: profile } = await supabase
+      // Use admin client to check profile — the new session isn't in cookies yet
+      // at this point in the request, so a regular client query would fail RLS.
+      const admin = createAdminClient();
+      const { data: profile } = await admin
         .from("profiles")
         .select("id")
         .eq("id", data.user.id)
