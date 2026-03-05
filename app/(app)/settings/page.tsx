@@ -18,6 +18,7 @@ interface Profile {
   daily_hours: number;
   coupon_code: string | null;
   coupon_discount: number;
+  coupon_description: string | null;
 }
 
 interface Subscription {
@@ -34,6 +35,7 @@ export default function SettingsPage() {
     daily_hours: 4,
     coupon_code: null,
     coupon_discount: 0,
+    coupon_description: null,
   });
   const [couponInput, setCouponInput] = useState("");
   const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid" | "applying">("idle");
@@ -51,7 +53,7 @@ export default function SettingsPage() {
 
       const { data: prof } = await supabase
         .from("profiles")
-        .select("name, target_rank, exam_month, daily_hours, coupon_code, coupon_discount")
+        .select("name, target_rank, exam_month, daily_hours, coupon_code, coupon_discount, coupon_description")
         .eq("id", user.id)
         .single();
 
@@ -63,6 +65,7 @@ export default function SettingsPage() {
           daily_hours: prof.daily_hours ?? 4,
           coupon_code: prof.coupon_code ?? null,
           coupon_discount: prof.coupon_discount ?? 0,
+          coupon_description: prof.coupon_description ?? null,
         });
       }
 
@@ -155,8 +158,9 @@ export default function SettingsPage() {
       await supabase.from("profiles").update({
         coupon_code: couponInput.trim().toUpperCase(),
         coupon_discount: data.discount_percent,
+        coupon_description: data.description || null,
       }).eq("id", user.id);
-      setProfile((p) => ({ ...p, coupon_code: couponInput.trim().toUpperCase(), coupon_discount: data.discount_percent }));
+      setProfile((p) => ({ ...p, coupon_code: couponInput.trim().toUpperCase(), coupon_discount: data.discount_percent, coupon_description: data.description || null }));
       setCouponStatus("valid");
     } else {
       setCouponStatus("invalid");
@@ -409,12 +413,17 @@ export default function SettingsPage() {
                   Upgrade to unlock unlimited practice, full mock tests, and advanced analytics.
                 </p>
 
-                {/* Coupon badge if applied */}
+                {/* Institute/coupon badge if applied */}
                 {disc > 0 && profile.coupon_code && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid #10b981" }}>
-                    <span style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px" }}>
+                  <div className="px-3 py-2.5 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid #10b981" }}>
+                    <p style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px", marginBottom: profile.coupon_description ? "4px" : "0" }}>
                       ✓ {profile.coupon_code} — {disc}% off applied
-                    </span>
+                    </p>
+                    {profile.coupon_description && (
+                      <p style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "10px" }}>
+                        {profile.coupon_description}
+                      </p>
+                    )}
                   </div>
                 )}
 

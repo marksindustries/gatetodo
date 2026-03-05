@@ -17,5 +17,6 @@ ALTER TABLE coupon_codes ENABLE ROW LEVEL SECURITY;
 -- Intentionally no RLS SELECT/INSERT policies — service-role only.
 
 -- ── Profiles additions ───────────────────────────────────────────────────────
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS coupon_code     text;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS coupon_discount  int NOT NULL DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS coupon_code         text;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS coupon_discount      int NOT NULL DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS coupon_description   text;
