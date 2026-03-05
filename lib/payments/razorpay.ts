@@ -32,20 +32,25 @@ export const PLANS = {
  */
 export async function createOrder(
   plan: "monthly" | "annual",
-  userId: string
+  userId: string,
+  discountPercent: number = 0
 ): Promise<{ order_id: string; amount: number; currency: string; key_id: string }> {
   const planConfig = PLANS[plan];
+  const finalAmount = discountPercent > 0
+    ? Math.round(planConfig.amount * (1 - discountPercent / 100))
+    : planConfig.amount;
 
   const order = await getRazorpay().orders.create({
-    amount: planConfig.amount,
+    amount: finalAmount,
     currency: planConfig.currency,
     receipt: `gatetodo_${userId}_${Date.now()}`.slice(0, 40),
-    notes: { user_id: userId, plan },
+    // expected_amount stored in notes so webhook can verify the correct amount
+    notes: { user_id: userId, plan, expected_amount: String(finalAmount) },
   });
 
   return {
     order_id: order.id,
-    amount: planConfig.amount,
+    amount: finalAmount,
     currency: planConfig.currency,
     key_id: process.env.RAZORPAY_KEY_ID!,
   };

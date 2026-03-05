@@ -26,6 +26,9 @@ interface FormData {
   exam_month: string;
   daily_hours: number;
   subject_ratings: Record<string, number>;
+  coupon_code: string;
+  coupon_discount: number;
+  coupon_status: "idle" | "valid" | "invalid";
 }
 
 export default function OnboardingPage() {
@@ -39,9 +42,23 @@ export default function OnboardingPage() {
     exam_month: "Feb 2026",
     daily_hours: 4,
     subject_ratings: Object.fromEntries(SUBJECTS.map((s) => [s, 50])),
+    coupon_code: "",
+    coupon_discount: 0,
+    coupon_status: "idle",
   });
   const router = useRouter();
   const supabase = createClient();
+
+  async function validateCoupon(code: string) {
+    if (!code.trim()) return;
+    const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code.trim().toUpperCase())}`);
+    const data = await res.json();
+    if (data.valid) {
+      setForm((f) => ({ ...f, coupon_status: "valid", coupon_discount: data.discount_percent }));
+    } else {
+      setForm((f) => ({ ...f, coupon_status: "invalid", coupon_discount: 0 }));
+    }
+  }
 
   function next() {
     setStep((s) => Math.min(s + 1, 5));
@@ -72,6 +89,8 @@ export default function OnboardingPage() {
       target_rank: form.target_rank,
       exam_month: examDate,
       daily_hours: form.daily_hours,
+      coupon_code: form.coupon_status === "valid" ? form.coupon_code.trim().toUpperCase() : null,
+      coupon_discount: form.coupon_status === "valid" ? form.coupon_discount : 0,
     });
 
     // Trigger roadmap generation (fire and forget)
@@ -160,6 +179,41 @@ export default function OnboardingPage() {
                 >
                   CS / CSE — only branch supported in v1
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1.5" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                  INSTITUTE / COUPON CODE{" "}
+                  <span style={{ color: "#475569" }}>(optional)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={form.coupon_code}
+                    onChange={(e) =>
+                      setForm({ ...form, coupon_code: e.target.value.toUpperCase(), coupon_status: "idle", coupon_discount: 0 })
+                    }
+                    onBlur={() => validateCoupon(form.coupon_code)}
+                    placeholder="e.g. IIT2026"
+                    className="w-full px-3 py-2.5 rounded text-sm outline-none"
+                    style={{
+                      background: "#0a0e1a",
+                      border: `1px solid ${form.coupon_status === "valid" ? "#10b981" : form.coupon_status === "invalid" ? "#ef4444" : "#1e293b"}`,
+                      color: "#f1f5f9",
+                      fontFamily: "var(--font-ibm-plex-mono)",
+                    }}
+                  />
+                </div>
+                {form.coupon_status === "valid" && (
+                  <p className="text-xs mt-1" style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                    ✓ {form.coupon_discount}% off applied
+                  </p>
+                )}
+                {form.coupon_status === "invalid" && (
+                  <p className="text-xs mt-1" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                    ✗ Invalid or expired code
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -16,6 +16,8 @@ interface Profile {
   target_rank: number | null;
   exam_month: string | null;
   daily_hours: number;
+  coupon_code: string | null;
+  coupon_discount: number;
 }
 
 interface Subscription {
@@ -30,7 +32,11 @@ export default function SettingsPage() {
     target_rank: null,
     exam_month: "",
     daily_hours: 4,
+    coupon_code: null,
+    coupon_discount: 0,
   });
+  const [couponInput, setCouponInput] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"idle" | "valid" | "invalid" | "applying">("idle");
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -45,7 +51,7 @@ export default function SettingsPage() {
 
       const { data: prof } = await supabase
         .from("profiles")
-        .select("name, target_rank, exam_month, daily_hours")
+        .select("name, target_rank, exam_month, daily_hours, coupon_code, coupon_discount")
         .eq("id", user.id)
         .single();
 
@@ -55,6 +61,8 @@ export default function SettingsPage() {
           target_rank: prof.target_rank,
           exam_month: prof.exam_month ?? "",
           daily_hours: prof.daily_hours ?? 4,
+          coupon_code: prof.coupon_code ?? null,
+          coupon_discount: prof.coupon_discount ?? 0,
         });
       }
 
@@ -134,6 +142,25 @@ export default function SettingsPage() {
     await supabase.from("user_concept_state").delete().eq("user_id", user.id);
     alert("Progress reset. Starting fresh!");
     router.push("/dashboard");
+  }
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    setCouponStatus("applying");
+    const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(couponInput.trim().toUpperCase())}`);
+    const data = await res.json();
+    if (data.valid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("profiles").update({
+        coupon_code: couponInput.trim().toUpperCase(),
+        coupon_discount: data.discount_percent,
+      }).eq("id", user.id);
+      setProfile((p) => ({ ...p, coupon_code: couponInput.trim().toUpperCase(), coupon_discount: data.discount_percent }));
+      setCouponStatus("valid");
+    } else {
+      setCouponStatus("invalid");
+    }
   }
 
   async function handleUpgrade(plan: "monthly" | "annual") {
@@ -373,43 +400,114 @@ export default function SettingsPage() {
                 ? new Date(subscription.current_period_end)
                 : null;
               const showUpgrade = !periodEnd || periodEnd <= new Date();
+              const disc = profile.coupon_discount ?? 0;
+              const monthlyFinal = disc > 0 ? Math.round(299 * (1 - disc / 100)) : 299;
+              const annualFinal = disc > 0 ? Math.round(2499 * (1 - disc / 100)) : 2499;
               return showUpgrade ? (
               <div className="space-y-3">
                 <p className="text-xs" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
                   Upgrade to unlock unlimited practice, full mock tests, and advanced analytics.
                 </p>
+
+                {/* Coupon badge if applied */}
+                {disc > 0 && profile.coupon_code && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid #10b981" }}>
+                    <span style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px" }}>
+                      ✓ {profile.coupon_code} — {disc}% off applied
+                    </span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3">
-                  {(["monthly", "annual"] as const).map((plan) => (
-                    <div
-                      key={plan}
-                      className="p-4 rounded"
-                      style={{
-                        background: "#0a0e1a",
-                        border: plan === "annual" ? "1px solid #f59e0b" : "1px solid #1e293b",
-                      }}
-                    >
-                      <p className="text-sm font-bold font-syne mb-1" style={{ color: "#f59e0b" }}>
-                        {plan === "monthly" ? "₹299/mo" : "₹2499/yr"}
-                      </p>
-                      <p className="text-xs mb-3" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
-                        {plan === "annual" ? "Save ₹1,089 vs monthly" : "Pay monthly"}
-                      </p>
-                      <button
-                        className="w-full py-1.5 rounded text-xs"
+                  {(["monthly", "annual"] as const).map((plan) => {
+                    const originalPrice = plan === "monthly" ? "₹299/mo" : "₹2499/yr";
+                    const discountedPrice = plan === "monthly" ? `₹${monthlyFinal}/mo` : `₹${annualFinal}/yr`;
+                    return (
+                      <div
+                        key={plan}
+                        className="p-4 rounded"
                         style={{
-                          background: plan === "annual" ? "#f59e0b" : "transparent",
-                          border: "1px solid #f59e0b",
-                          color: plan === "annual" ? "#0a0e1a" : "#f59e0b",
-                          fontFamily: "var(--font-ibm-plex-mono)",
-                          cursor: "pointer",
+                          background: "#0a0e1a",
+                          border: plan === "annual" ? "1px solid #f59e0b" : "1px solid #1e293b",
                         }}
-                        onClick={() => handleUpgrade(plan)}
                       >
-                        Upgrade
+                        {disc > 0 ? (
+                          <div className="mb-1">
+                            <span className="text-xs line-through" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                              {originalPrice}
+                            </span>
+                            <p className="text-sm font-bold font-syne" style={{ color: "#10b981" }}>
+                              {discountedPrice}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm font-bold font-syne mb-1" style={{ color: "#f59e0b" }}>
+                            {originalPrice}
+                          </p>
+                        )}
+                        <p className="text-xs mb-3" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                          {plan === "annual" ? "Save ₹1,089 vs monthly" : "Pay monthly"}
+                        </p>
+                        <button
+                          className="w-full py-1.5 rounded text-xs"
+                          style={{
+                            background: plan === "annual" ? "#f59e0b" : "transparent",
+                            border: "1px solid #f59e0b",
+                            color: plan === "annual" ? "#0a0e1a" : "#f59e0b",
+                            fontFamily: "var(--font-ibm-plex-mono)",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => handleUpgrade(plan)}
+                        >
+                          Upgrade
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Coupon entry for users without a code */}
+                {!profile.coupon_code && (
+                  <div className="pt-2">
+                    <p className="text-xs mb-2" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                      Have a coupon or institute code?
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponStatus("idle"); }}
+                        placeholder="Enter code"
+                        className="flex-1 px-3 py-2 rounded text-xs outline-none"
+                        style={{
+                          background: "#0a0e1a",
+                          border: `1px solid ${couponStatus === "valid" ? "#10b981" : couponStatus === "invalid" ? "#ef4444" : "#1e293b"}`,
+                          color: "#f1f5f9",
+                          fontFamily: "var(--font-ibm-plex-mono)",
+                        }}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponStatus === "applying" || !couponInput.trim()}
+                        className="px-4 py-2 rounded text-xs"
+                        style={{
+                          background: "#f59e0b",
+                          color: "#0a0e1a",
+                          fontFamily: "var(--font-ibm-plex-mono)",
+                          cursor: couponStatus === "applying" || !couponInput.trim() ? "not-allowed" : "pointer",
+                          opacity: couponStatus === "applying" || !couponInput.trim() ? 0.5 : 1,
+                        }}
+                      >
+                        {couponStatus === "applying" ? "..." : "Apply"}
                       </button>
                     </div>
-                  ))}
-                </div>
+                    {couponStatus === "invalid" && (
+                      <p className="text-xs mt-1" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                        ✗ Invalid or expired code
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               ) : null;
             })()}

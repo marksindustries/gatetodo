@@ -24,8 +24,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the captured amount matches our expected plan price.
-    // Prevents paying ₹1 with plan="annual" in notes to get a free subscription.
-    const expectedAmount = PLANS[plan as keyof typeof PLANS].amount;
+    // For discounted orders, expected_amount is stored in notes (set server-side at order creation).
+    // Falls back to full plan price if notes.expected_amount is absent.
+    const expectedAmount = payment.notes?.expected_amount
+      ? Number(payment.notes.expected_amount)
+      : PLANS[plan as keyof typeof PLANS].amount;
     if (payment.amount !== expectedAmount || payment.currency !== "INR") {
       console.error(
         `[webhook] Amount mismatch for plan=${plan}: expected ${expectedAmount} paise, got ${payment.amount} ${payment.currency} (payment=${payment.id})`
