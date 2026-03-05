@@ -92,15 +92,25 @@ export async function groqQuery(
   // ── Layer 1: Redis exact cache ──
   if (!skipCache) {
     const cached = await redisGet(promptHash);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        // Cached entry is malformed (e.g. truncated from old token cap) — discard and regenerate
+      }
+    }
   }
 
   // ── Layer 2: pgvector semantic cache ──
   if (!skipCache && embedding) {
     const semanticHit = await semanticCacheGet(embedding);
     if (semanticHit) {
-      await redisSet(promptHash, semanticHit);
-      return JSON.parse(semanticHit);
+      try {
+        await redisSet(promptHash, semanticHit);
+        return JSON.parse(semanticHit);
+      } catch {
+        // Malformed semantic cache entry — fall through to regenerate
+      }
     }
   }
 
@@ -157,12 +167,17 @@ export async function groqQuery(
   const raw = response.choices[0]?.message?.content ?? "{}";
   const tokensUsed = response.usage?.total_tokens ?? 0;
 
-  await redisSet(promptHash, raw);
-  if (embedding) {
-    await semanticCacheSet(promptHash, embedding, raw, modelUsed, tokensUsed);
+  // Only cache if the response is valid JSON — prevents poisoning the cache with truncated output
+  try {
+    const parsed = JSON.parse(raw);
+    await redisSet(promptHash, raw);
+    if (embedding) {
+      await semanticCacheSet(promptHash, embedding, raw, modelUsed, tokensUsed);
+    }
+    return parsed;
+  } catch {
+    throw new Error(`GROQ returned non-JSON (model=${modelUsed}, tokens=${tokensUsed}): ${raw.slice(0, 120)}`);
   }
-
-  return JSON.parse(raw);
 }
 
 /**

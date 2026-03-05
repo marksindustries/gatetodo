@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Syne, IBM_Plex_Mono } from "next/font/google";
+import { Syne, IBM_Plex_Mono, Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 
 const syne = Syne({
@@ -11,6 +11,19 @@ const syne = Syne({
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   variable: "--font-ibm-plex-mono",
+  weight: ["300", "400", "500", "600"],
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  weight: ["700", "900"],
+  style: ["normal", "italic"],
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
   weight: ["300", "400", "500", "600"],
 });
 
@@ -27,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${syne.variable} ${ibmPlexMono.variable} antialiased`}>
+      <body className={`${syne.variable} ${ibmPlexMono.variable} ${playfair.variable} ${dmSans.variable} antialiased`}>
         {children}
       </body>
     </html>
