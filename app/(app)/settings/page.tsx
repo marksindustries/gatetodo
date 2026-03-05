@@ -147,6 +147,15 @@ export default function SettingsPage() {
     router.push("/dashboard");
   }
 
+  async function handleRemoveCoupon() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("profiles").update({ coupon_code: null, coupon_discount: 0, coupon_description: null }).eq("id", user.id);
+    setProfile((p) => ({ ...p, coupon_code: null, coupon_discount: 0, coupon_description: null }));
+    setCouponInput("");
+    setCouponStatus("idle");
+  }
+
   async function handleApplyCoupon() {
     if (!couponInput.trim()) return;
     setCouponStatus("applying");
@@ -415,15 +424,23 @@ export default function SettingsPage() {
 
                 {/* Institute/coupon badge if applied */}
                 {disc > 0 && profile.coupon_code && (
-                  <div className="px-3 py-2.5 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid #10b981" }}>
-                    <p style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px", marginBottom: profile.coupon_description ? "4px" : "0" }}>
-                      ✓ {profile.coupon_code} — {disc}% off applied
-                    </p>
-                    {profile.coupon_description && (
-                      <p style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "10px" }}>
-                        {profile.coupon_description}
+                  <div className="px-3 py-2.5 rounded flex items-start justify-between gap-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid #10b981" }}>
+                    <div>
+                      <p style={{ color: "#10b981", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px", marginBottom: profile.coupon_description ? "4px" : "0" }}>
+                        ✓ {profile.coupon_code} — {disc}% off applied
                       </p>
-                    )}
+                      {profile.coupon_description && (
+                        <p style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "10px" }}>
+                          {profile.coupon_description}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)", fontSize: "11px", background: "none", border: "none", cursor: "pointer", flexShrink: 0, paddingTop: "1px" }}
+                    >
+                      ✕ remove
+                    </button>
                   </div>
                 )}
 
