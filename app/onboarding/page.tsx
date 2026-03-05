@@ -28,6 +28,7 @@ interface FormData {
   subject_ratings: Record<string, number>;
   coupon_code: string;
   coupon_discount: number;
+  coupon_description: string | null;
   coupon_status: "idle" | "valid" | "invalid";
 }
 
@@ -44,6 +45,7 @@ export default function OnboardingPage() {
     subject_ratings: Object.fromEntries(SUBJECTS.map((s) => [s, 50])),
     coupon_code: "",
     coupon_discount: 0,
+    coupon_description: null,
     coupon_status: "idle",
   });
   const router = useRouter();
@@ -54,9 +56,9 @@ export default function OnboardingPage() {
     const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code.trim().toUpperCase())}`);
     const data = await res.json();
     if (data.valid) {
-      setForm((f) => ({ ...f, coupon_status: "valid", coupon_discount: data.discount_percent }));
+      setForm((f) => ({ ...f, coupon_status: "valid", coupon_discount: data.discount_percent, coupon_description: data.description ?? null }));
     } else {
-      setForm((f) => ({ ...f, coupon_status: "invalid", coupon_discount: 0 }));
+      setForm((f) => ({ ...f, coupon_status: "invalid", coupon_discount: 0, coupon_description: null }));
     }
   }
 
@@ -91,6 +93,7 @@ export default function OnboardingPage() {
       daily_hours: form.daily_hours,
       coupon_code: form.coupon_status === "valid" ? form.coupon_code.trim().toUpperCase() : null,
       coupon_discount: form.coupon_status === "valid" ? form.coupon_discount : 0,
+      coupon_description: form.coupon_status === "valid" ? form.coupon_description : null,
     });
 
     // Trigger roadmap generation (fire and forget)

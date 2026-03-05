@@ -475,48 +475,46 @@ export default function SettingsPage() {
                   })}
                 </div>
 
-                {/* Coupon entry for users without a code */}
-                {!profile.coupon_code && (
-                  <div className="pt-2">
-                    <p className="text-xs mb-2" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
-                      Have a coupon or institute code?
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={couponInput}
-                        onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponStatus("idle"); }}
-                        placeholder="Enter code"
-                        className="flex-1 px-3 py-2 rounded text-xs outline-none"
-                        style={{
-                          background: "#0a0e1a",
-                          border: `1px solid ${couponStatus === "valid" ? "#10b981" : couponStatus === "invalid" ? "#ef4444" : "#1e293b"}`,
-                          color: "#f1f5f9",
-                          fontFamily: "var(--font-ibm-plex-mono)",
-                        }}
-                      />
-                      <button
-                        onClick={handleApplyCoupon}
-                        disabled={couponStatus === "applying" || !couponInput.trim()}
-                        className="px-4 py-2 rounded text-xs"
-                        style={{
-                          background: "#f59e0b",
-                          color: "#0a0e1a",
-                          fontFamily: "var(--font-ibm-plex-mono)",
-                          cursor: couponStatus === "applying" || !couponInput.trim() ? "not-allowed" : "pointer",
-                          opacity: couponStatus === "applying" || !couponInput.trim() ? 0.5 : 1,
-                        }}
-                      >
-                        {couponStatus === "applying" ? "..." : "Apply"}
-                      </button>
-                    </div>
-                    {couponStatus === "invalid" && (
-                      <p className="text-xs mt-1" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
-                        ✗ Invalid or expired code
-                      </p>
-                    )}
+                {/* Coupon entry — always visible so users can apply or change later */}
+                <div className="pt-2">
+                  <p className="text-xs mb-2" style={{ color: "#475569", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                    {profile.coupon_code ? "Change coupon / institute code" : "Have a coupon or institute code?"}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponStatus("idle"); }}
+                      placeholder={profile.coupon_code ?? "Enter code"}
+                      className="flex-1 px-3 py-2 rounded text-xs outline-none"
+                      style={{
+                        background: "#0a0e1a",
+                        border: `1px solid ${couponStatus === "valid" ? "#10b981" : couponStatus === "invalid" ? "#ef4444" : "#1e293b"}`,
+                        color: "#f1f5f9",
+                        fontFamily: "var(--font-ibm-plex-mono)",
+                      }}
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={couponStatus === "applying" || !couponInput.trim()}
+                      className="px-4 py-2 rounded text-xs"
+                      style={{
+                        background: "#f59e0b",
+                        color: "#0a0e1a",
+                        fontFamily: "var(--font-ibm-plex-mono)",
+                        cursor: couponStatus === "applying" || !couponInput.trim() ? "not-allowed" : "pointer",
+                        opacity: couponStatus === "applying" || !couponInput.trim() ? 0.5 : 1,
+                      }}
+                    >
+                      {couponStatus === "applying" ? "..." : "Apply"}
+                    </button>
                   </div>
-                )}
+                  {couponStatus === "invalid" && (
+                    <p className="text-xs mt-1" style={{ color: "#ef4444", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                      ✗ Invalid or expired code
+                    </p>
+                  )}
+                </div>
               </div>
               ) : null;
             })()}
