@@ -80,6 +80,10 @@ export function verifyPaymentSignature(
   }
 }
 
+export async function fetchOrder(orderId: string) {
+  return getRazorpay().orders.fetch(orderId);
+}
+
 export function verifyWebhookSignature(body: string, signature: string): boolean {
   const expected = crypto
     .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)

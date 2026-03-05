@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/db/supabase-server";
-import { verifyWebhookSignature, PLANS } from "@/lib/payments/razorpay";
+import { verifyWebhookSignature, fetchOrder, PLANS } from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -23,12 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Verify the captured amount matches our expected plan price.
-    // For discounted orders, expected_amount is stored in notes (set server-side at order creation).
-    // Falls back to full plan price if notes.expected_amount is absent.
-    const expectedAmount = payment.notes?.expected_amount
-      ? Number(payment.notes.expected_amount)
-      : PLANS[plan as keyof typeof PLANS].amount;
+    // Verify the captured amount matches the order amount.
+    // Fetch order from Razorpay to get the authoritative amount — order notes (where expected_amount
+    // is stored) are NOT reliably propagated to payment.notes in the webhook payload.
+    let expectedAmount: number;
+    try {
+      const order = await fetchOrder(payment.order_id);
+      expectedAmount = Number(order.amount);
+    } catch {
+      // Fallback: use plan price if order fetch fails
+      expectedAmount = PLANS[plan as keyof typeof PLANS].amount;
+    }
     if (payment.amount !== expectedAmount || payment.currency !== "INR") {
       console.error(
         `[webhook] Amount mismatch for plan=${plan}: expected ${expectedAmount} paise, got ${payment.amount} ${payment.currency} (payment=${payment.id})`
