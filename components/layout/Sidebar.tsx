@@ -75,6 +75,14 @@ export function Sidebar() {
 
         {/* Bottom */}
         <div style={{ borderTop: "1px solid #1e293b" }}>
+          <Link href="/blog" className="flex items-center gap-3 px-4 py-2.5" style={{ textDecoration: "none" }}>
+            <span style={{ color: "#475569", fontSize: "14px" }}>✎</span>
+            <span className="text-xs" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>Blog</span>
+          </Link>
+          <Link href="/" className="flex items-center gap-3 px-4 py-2.5" style={{ textDecoration: "none" }}>
+            <span style={{ color: "#475569", fontSize: "14px" }}>⌂</span>
+            <span className="text-xs" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>Home</span>
+          </Link>
           <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5" style={{ textDecoration: "none" }}>
             <span style={{ color: "#475569", fontSize: "14px" }}>⚙</span>
             <span className="text-xs" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>Settings</span>
@@ -183,6 +191,24 @@ export function Sidebar() {
                 <span className="text-sm" style={{ color: isActive("/settings") ? "#f1f5f9" : "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
                   Settings
                 </span>
+              </Link>
+              <Link
+                href="/blog"
+                onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-4 px-5 py-3.5"
+                style={{ textDecoration: "none", background: "transparent" }}
+              >
+                <span style={{ color: "#475569", fontSize: "16px", width: "20px" }}>✎</span>
+                <span className="text-sm" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>Blog</span>
+              </Link>
+              <Link
+                href="/"
+                onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-4 px-5 py-3.5"
+                style={{ textDecoration: "none", background: "transparent" }}
+              >
+                <span style={{ color: "#475569", fontSize: "16px", width: "20px" }}>⌂</span>
+                <span className="text-sm" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>Home</span>
               </Link>
 
               <div style={{ borderTop: "1px solid #1e293b", marginTop: "4px" }}>

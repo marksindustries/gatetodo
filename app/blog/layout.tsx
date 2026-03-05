@@ -46,12 +46,12 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
           <Link href="/blog" style={{ color: C.muted, fontSize: "14px", textDecoration: "none" }}>Articles</Link>
           <Link href="/blog?category=algorithms" style={{ color: C.muted, fontSize: "14px", textDecoration: "none" }}>Concepts</Link>
           <Link href="/dashboard" style={{ color: C.muted, fontSize: "14px", textDecoration: "none" }}>Practice App</Link>
-          <Link href="/login" style={{
+          <Link href="/signup" style={{
             background: C.accent, color: "#000", padding: "8px 20px",
             fontWeight: 600, fontSize: "13px", textDecoration: "none",
           }}>Start Free Trial</Link>
         </div>
-        <Link href="/login" className="bl-nav-mobile-cta" style={{
+        <Link href="/signup" className="bl-nav-mobile-cta" style={{
           background: C.accent, color: "#000", padding: "7px 16px",
           fontWeight: 600, fontSize: "12px", textDecoration: "none",
         }}>Try Free</Link>

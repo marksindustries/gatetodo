@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createAdminClient } from "@/lib/db/supabase-server";
+import { ViewCounter } from "@/components/blog/ViewCounter";
 import type { Metadata } from "next";
 
 export const revalidate = 3600;
@@ -169,10 +170,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const post = await getPost(params.slug);
   if (!post) notFound();
 
-  // Increment views (fire and forget, non-blocking)
-  const admin = createAdminClient();
-  admin.from("blog_posts").update({ views: post.views + 1 }).eq("slug", params.slug).then(() => {});
-
   const cat = catColors[post.category ?? ""];
   const diffColors: Record<string, { color: string; bg: string }> = {
     easy:   { color: C.green,   bg: "rgba(0,214,143,0.1)" },
@@ -183,6 +180,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "64px 32px" }}>
+      <ViewCounter slug={params.slug} />
 
       {/* Breadcrumb */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "32px", fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "12px", color: C.muted }}>
@@ -246,7 +244,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         <p style={{ color: C.muted, fontSize: "14px", marginBottom: "24px" }}>
           GATEprep generates personalized questions on {cat?.label ?? "this topic"} using spaced repetition.
         </p>
-        <Link href="/login" style={{ background: C.accent, color: "#000", padding: "14px 32px", fontWeight: 600, fontSize: "15px", textDecoration: "none", display: "inline-block" }}>
+        <Link href="/signup" style={{ background: C.accent, color: "#000", padding: "14px 32px", fontWeight: 600, fontSize: "15px", textDecoration: "none", display: "inline-block" }}>
           Start Free Practice →
         </Link>
       </div>

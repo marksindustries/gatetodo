@@ -44,9 +44,11 @@ export default function LoginPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 mb-4">
-            <span className="text-2xl font-bold font-syne" style={{ color: "#f59e0b" }}>
-              GATE<span className="text-white">prep</span>
-            </span>
+            <a href="/" style={{ textDecoration: "none" }}>
+              <span className="text-2xl font-bold font-syne" style={{ color: "#f59e0b" }}>
+                GATE<span className="text-white">prep</span>
+              </span>
+            </a>
           </div>
           <p className="text-sm" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
             Adaptive GATE CS mastery

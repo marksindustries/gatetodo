@@ -184,7 +184,7 @@ export default async function HomePage() {
               {l.label}
             </Link>
           ))}
-          <Link href="/login" style={{
+          <Link href="/signup" style={{
             background: C.accent, color: "#000", padding: "8px 20px",
             fontWeight: 600, fontSize: "13px", textDecoration: "none", letterSpacing: "0.5px",
           }}>
@@ -192,7 +192,7 @@ export default async function HomePage() {
           </Link>
         </div>
         {/* Mobile CTA — always visible */}
-        <Link href="/login" className="hp-nav-mobile-cta" style={{
+        <Link href="/signup" className="hp-nav-mobile-cta" style={{
           background: C.accent, color: "#000", padding: "7px 16px",
           fontWeight: 600, fontSize: "12px", textDecoration: "none",
         }}>
@@ -238,7 +238,7 @@ export default async function HomePage() {
             <Link href="/blog" style={{ background: C.accent, color: "#000", padding: "14px 28px", fontWeight: 600, fontSize: "15px", textDecoration: "none", letterSpacing: "0.2px" }}>
               Read Latest Articles →
             </Link>
-            <Link href="/login" style={{ color: C.muted, fontSize: "14px", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+            <Link href="/signup" style={{ color: C.muted, fontSize: "14px", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
               🎯 Take Free Mock Test
             </Link>
           </div>
@@ -411,7 +411,7 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
-            <Link href="/login" style={{ background: C.accent, color: "#000", padding: "14px 28px", fontWeight: 600, fontSize: "15px", textDecoration: "none" }}>
+            <Link href="/signup" style={{ background: C.accent, color: "#000", padding: "14px 28px", fontWeight: 600, fontSize: "15px", textDecoration: "none" }}>
               Start Reading Free →
             </Link>
           </div>
@@ -533,16 +533,16 @@ export default async function HomePage() {
             <div>
               <h4 style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: C.muted, marginBottom: "20px" }}>Resources</h4>
               {["PYQ Bank", "Mock Tests", "Formula Sheets", "GATE Syllabus"].map((t) => (
-                <Link key={t} href="/login" style={{ display: "block", color: C.text, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>{t}</Link>
+                <Link key={t} href="/signup" style={{ display: "block", color: C.text, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>{t}</Link>
               ))}
             </div>
             <div>
               <h4 style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: C.muted, marginBottom: "20px" }}>GATEprep App</h4>
               {["Adaptive Practice", "Spaced Repetition", "Progress Dashboard"].map((t) => (
-                <Link key={t} href="/login" style={{ display: "block", color: C.text, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>{t}</Link>
+                <Link key={t} href="/signup" style={{ display: "block", color: C.text, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>{t}</Link>
               ))}
-              <Link href="/login" style={{ display: "block", color: C.muted, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>₹299/month</Link>
-              <Link href="/login" style={{ display: "block", color: C.accent, textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Start Free Trial →</Link>
+              <Link href="/signup" style={{ display: "block", color: C.muted, textDecoration: "none", fontSize: "14px", marginBottom: "10px" }}>₹299/month</Link>
+              <Link href="/signup" style={{ display: "block", color: C.accent, textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Start Free Trial →</Link>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", paddingTop: "32px", borderTop: `1px solid ${C.border}`, fontSize: "13px", color: C.muted, fontFamily: "var(--font-ibm-plex-mono), monospace" }}>
