@@ -308,6 +308,28 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-xs mb-1.5" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
+                  EXAM MONTH
+                </label>
+                <input
+                  type="month"
+                  value={profile.exam_month ? profile.exam_month.slice(0, 7) : ""}
+                  min="2025-01"
+                  onChange={(e) => setProfile({ ...profile, exam_month: e.target.value ? `${e.target.value}-01` : "" })}
+                  className="px-3 py-2.5 rounded text-sm outline-none"
+                  style={{
+                    background: "#0a0e1a",
+                    border: "1px solid #1e293b",
+                    color: "#f59e0b",
+                    fontFamily: "var(--font-ibm-plex-mono)",
+                    colorScheme: "dark",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#f59e0b")}
+                  onBlur={(e) => (e.target.style.borderColor = "#1e293b")}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs mb-1.5" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
                   DAILY STUDY HOURS — <span style={{ color: "#f59e0b" }}>{profile.daily_hours}h</span>
                 </label>
                 <input

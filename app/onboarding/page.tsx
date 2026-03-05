@@ -13,10 +13,6 @@ const TARGET_OPTIONS = [
   { label: "PSU Cutoff", value: 3000 },
 ];
 
-const MONTHS = [
-  "Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026",
-  "May 2026", "Jun 2026", "Jul 2026", "Aug 2026",
-];
 
 interface FormData {
   name: string;
@@ -40,7 +36,7 @@ export default function OnboardingPage() {
     branch: "CS",
     level: "",
     target_rank: null,
-    exam_month: "Feb 2026",
+    exam_month: "2026-02",
     daily_hours: 4,
     subject_ratings: Object.fromEntries(SUBJECTS.map((s) => [s, 50])),
     coupon_code: "",
@@ -78,10 +74,8 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Parse exam_month to a date (first day of that month)
-    const [month, year] = form.exam_month.split(" ");
-    const monthIndex = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(month);
-    const examDate = new Date(parseInt(year), monthIndex, 1).toISOString().split("T")[0];
+    // exam_month is stored as "YYYY-MM" from the month input; persist as first day of that month
+    const examDate = `${form.exam_month}-01`;
 
     await supabase.from("profiles").upsert({
       id: user.id,
@@ -316,25 +310,22 @@ export default function OnboardingPage() {
                 <label className="block text-xs mb-2" style={{ color: "#94a3b8", fontFamily: "var(--font-ibm-plex-mono)" }}>
                   EXAM MONTH
                 </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {MONTHS.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setForm({ ...form, exam_month: m })}
-                      className="p-2 rounded text-xs text-center transition-all"
-                      style={{
-                        background: form.exam_month === m ? "rgba(245, 158, 11, 0.1)" : "#0a0e1a",
-                        border: `1px solid ${form.exam_month === m ? "#f59e0b" : "#1e293b"}`,
-                        color: form.exam_month === m ? "#f59e0b" : "#94a3b8",
-                        fontFamily: "var(--font-ibm-plex-mono)",
-                      }}
-                    >
-                      {m.split(" ")[0]}
-                      <br />
-                      <span style={{ fontSize: "10px", color: "#475569" }}>{m.split(" ")[1]}</span>
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="month"
+                  value={form.exam_month}
+                  min="2025-01"
+                  onChange={(e) => setForm({ ...form, exam_month: e.target.value })}
+                  className="px-3 py-2.5 rounded text-sm outline-none"
+                  style={{
+                    background: "#0a0e1a",
+                    border: "1px solid #1e293b",
+                    color: "#f59e0b",
+                    fontFamily: "var(--font-ibm-plex-mono)",
+                    colorScheme: "dark",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#f59e0b")}
+                  onBlur={(e) => (e.target.style.borderColor = "#1e293b")}
+                />
               </div>
 
               <div>
