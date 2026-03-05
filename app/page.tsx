@@ -41,7 +41,7 @@ type Post = {
   published_at: string;
 };
 
-export const revalidate = 3600; // ISR: revalidate every hour
+export const revalidate = 3600;
 
 async function getPosts(): Promise<Post[]> {
   const admin = createAdminClient();
@@ -91,11 +91,74 @@ export default async function HomePage() {
   return (
     <div style={{ background: C.bg, color: C.text, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "16px", lineHeight: "1.6", overflowX: "hidden", minHeight: "100vh" }}>
 
+      <style>{`
+        /* ── Responsive layout classes ── */
+        .hp-nav { padding: 0 48px; }
+        .hp-nav-links { display: flex; gap: 32px; align-items: center; }
+        .hp-hero-grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; padding-top: 64px; position: relative; overflow: hidden; }
+        .hp-hero-left { padding: 80px 64px 80px 96px; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 2; }
+        .hp-hero-right { padding: 80px 64px 80px 0; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+        .hp-hero-ctas { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+        .hp-stats-row { display: flex; gap: 48px; margin-top: 64px; padding-top: 40px; border-top: 1px solid ${C.border}; flex-wrap: wrap; }
+        .hp-section-pad { padding-left: 96px; padding-right: 96px; }
+        .hp-blog-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: ${C.border}; }
+        .hp-featured-span { grid-column: span 2; grid-row: span 2; }
+        .hp-concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+        .hp-newsletter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+        .hp-newsletter-pad { padding: 64px; }
+        .hp-newsletter-input-row { display: flex; }
+        .hp-newsletter-input-row input { border-right: none; }
+        .hp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+        .hp-footer-pad { padding: 64px 96px 32px; }
+        .hp-recent-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 24px; align-items: center; padding: 24px 28px; }
+        .hp-recent-arrow { display: block; }
+
+        @media (max-width: 1024px) {
+          .hp-nav { padding: 0 32px; }
+          .hp-hero-left { padding: 60px 40px 60px 48px; }
+          .hp-hero-right { padding: 60px 32px 60px 0; }
+          .hp-section-pad { padding-left: 48px; padding-right: 48px; }
+          .hp-blog-grid { grid-template-columns: repeat(2,1fr); }
+          .hp-concept-grid { gap: 48px; }
+          .hp-newsletter-grid { gap: 40px; }
+          .hp-newsletter-pad { padding: 48px; }
+          .hp-footer-pad { padding: 48px 48px 32px; }
+          .hp-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+        }
+
+        @media (max-width: 768px) {
+          .hp-nav { padding: 0 20px; }
+          .hp-nav-links { display: none; }
+          .hp-hero-grid { grid-template-columns: 1fr; min-height: auto; }
+          .hp-hero-right { display: none; }
+          .hp-hero-left { padding: 48px 20px 40px; }
+          .hp-hero-ctas { flex-direction: column; align-items: flex-start; }
+          .hp-stats-row { gap: 24px; margin-top: 40px; padding-top: 28px; }
+          .hp-section-pad { padding-left: 20px; padding-right: 20px; }
+          .hp-blog-grid { grid-template-columns: 1fr; }
+          .hp-featured-span { grid-column: span 1; grid-row: span 1; }
+          .hp-concept-grid { grid-template-columns: 1fr; gap: 32px; }
+          .hp-newsletter-grid { grid-template-columns: 1fr; gap: 28px; }
+          .hp-newsletter-pad { padding: 32px 20px; }
+          .hp-newsletter-input-row { flex-direction: column; gap: 0; }
+          .hp-newsletter-input-row input { border-right: 1px solid ${C.border} !important; border-bottom: none; }
+          .hp-newsletter-input-row button { width: 100%; }
+          .hp-footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+          .hp-footer-pad { padding: 40px 20px 24px; }
+          .hp-recent-row { grid-template-columns: 40px 1fr; gap: 16px; padding: 16px 16px; }
+          .hp-recent-arrow { display: none; }
+        }
+
+        @media (max-width: 480px) {
+          .hp-footer-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
       {/* NAV */}
-      <nav style={{
+      <nav className="hp-nav" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 48px", height: "64px",
+        height: "64px",
         background: "rgba(10,10,15,0.85)", backdropFilter: "blur(20px)",
         borderBottom: `1px solid ${C.border}`,
       }}>
@@ -110,7 +173,7 @@ export default async function HomePage() {
             GATE<span style={{ color: C.accent }}>prep</span>
           </span>
         </Link>
-        <div style={{ display: "flex", gap: "32px", alignItems: "center" }}>
+        <div className="hp-nav-links">
           {[
             { label: "Articles", href: "/blog" },
             { label: "Concepts", href: "/blog?category=algorithms" },
@@ -128,10 +191,18 @@ export default async function HomePage() {
             Start Free Trial
           </Link>
         </div>
+        {/* Mobile CTA — always visible */}
+        <Link href="/login" className="hp-nav-mobile-cta" style={{
+          background: C.accent, color: "#000", padding: "7px 16px",
+          fontWeight: 600, fontSize: "12px", textDecoration: "none",
+        }}>
+          Try Free
+        </Link>
+        <style>{`.hp-nav-mobile-cta { display: none; } @media (max-width: 768px) { .hp-nav-mobile-cta { display: block; } }`}</style>
       </nav>
 
       {/* HERO */}
-      <div style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "1fr 1fr", paddingTop: "64px", position: "relative", overflow: "hidden" }}>
+      <div className="hp-hero-grid">
         {/* grid bg */}
         <div style={{
           position: "absolute", inset: 0,
@@ -141,7 +212,7 @@ export default async function HomePage() {
         }} />
 
         {/* Left */}
-        <div style={{ padding: "80px 64px 80px 96px", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 2 }}>
+        <div className="hp-hero-left">
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
             background: "rgba(245,166,35,0.1)", border: "1px solid rgba(245,166,35,0.25)",
@@ -153,7 +224,7 @@ export default async function HomePage() {
             GATE 2026 Prep
           </div>
 
-          <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(48px,5vw,72px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-1.5px", marginBottom: "24px" }}>
+          <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(40px,5vw,72px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-1.5px", marginBottom: "24px" }}>
             Master CS.<br />
             <span style={{ color: C.accent, fontStyle: "italic" }}>Crack GATE.</span>
           </h1>
@@ -163,7 +234,7 @@ export default async function HomePage() {
             Built for engineers who want to understand, not memorize.
           </p>
 
-          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+          <div className="hp-hero-ctas">
             <Link href="/blog" style={{ background: C.accent, color: "#000", padding: "14px 28px", fontWeight: 600, fontSize: "15px", textDecoration: "none", letterSpacing: "0.2px" }}>
               Read Latest Articles →
             </Link>
@@ -172,7 +243,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div style={{ display: "flex", gap: "48px", marginTop: "64px", paddingTop: "40px", borderTop: `1px solid ${C.border}` }}>
+          <div className="hp-stats-row">
             {[
               { num: "240", suffix: "+", label: "Articles Published" },
               { num: "18",  suffix: "k", label: "Monthly Readers" },
@@ -189,7 +260,7 @@ export default async function HomePage() {
         </div>
 
         {/* Right — featured card */}
-        <div style={{ padding: "80px 64px 80px 0", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", zIndex: 2 }}>
+        <div className="hp-hero-right">
           {featured && (
             <Link href={`/blog/${featured.slug}`} style={{ textDecoration: "none", width: "100%", maxWidth: "480px" }}>
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, overflow: "hidden", cursor: "pointer" }}>
@@ -231,7 +302,7 @@ export default async function HomePage() {
       </div>
 
       {/* TOPICS BAR */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 96px 60px" }}>
+      <div className="hp-section-pad" style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "60px" }}>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           {[
             { label: "All Topics", count: posts.length, href: "/blog" },
@@ -246,7 +317,7 @@ export default async function HomePage() {
               display: "flex", alignItems: "center", gap: "8px",
               padding: "10px 20px", border: `1px solid ${C.border}`,
               background: C.surface, color: C.muted, fontSize: "13px", fontWeight: 500,
-              textDecoration: "none", transition: "all 0.2s",
+              textDecoration: "none",
             }}>
               {chip.label}
               {chip.count !== null && (
@@ -260,13 +331,13 @@ export default async function HomePage() {
       </div>
 
       {/* BLOG GRID */}
-      <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 96px 80px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "48px" }}>
+      <section className="hp-section-pad" style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "80px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "48px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", color: C.accent, marginBottom: "10px", display: "block" }}>
               // Featured Articles
             </span>
-            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "36px", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1.15 }}>
+            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(28px,3vw,36px)", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1.15 }}>
               Deep Dives Worth<br />Your Time
             </h2>
           </div>
@@ -275,13 +346,13 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "2px", background: C.border }}>
+        <div className="hp-blog-grid">
           {/* Featured big card */}
           {featured && (
-            <Link href={`/blog/${featured.slug}`} style={{ textDecoration: "none", gridColumn: "span 2", gridRow: "span 2" }}>
+            <Link href={`/blog/${featured.slug}`} className="hp-featured-span" style={{ textDecoration: "none" }}>
               <div style={{ background: C.surface, padding: "32px", display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", cursor: "pointer" }}>
                 <CategoryBadge category={featured.category} />
-                <h3 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "28px", fontWeight: 700, lineHeight: 1.2, marginBottom: "12px", color: C.text, flex: 1 }}>{featured.title}</h3>
+                <h3 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, lineHeight: 1.2, marginBottom: "12px", color: C.text, flex: 1 }}>{featured.title}</h3>
                 <p style={{ color: C.muted, fontSize: "15px", lineHeight: 1.6, marginBottom: "24px" }}>{featured.excerpt}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
                   <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", color: C.muted }}>
@@ -296,7 +367,7 @@ export default async function HomePage() {
           {/* Other cards */}
           {gridPosts.map((post) => (
             <Link key={post.slug} href={`/blog/${post.slug}`} style={{ textDecoration: "none" }}>
-              <div style={{ background: C.bg, padding: "32px", display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", cursor: "pointer", borderBottom: `2px solid transparent` }}>
+              <div style={{ background: C.bg, padding: "28px", display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden", cursor: "pointer" }}>
                 <CategoryBadge category={post.category} />
                 <h3 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "18px", fontWeight: 700, lineHeight: 1.35, marginBottom: "12px", color: C.text, flex: 1 }}>{post.title}</h3>
                 {post.excerpt && <p style={{ color: C.muted, fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>{post.excerpt}</p>}
@@ -314,19 +385,19 @@ export default async function HomePage() {
 
       {/* CONCEPT SECTION */}
       <div style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "80px 96px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "80px", alignItems: "center" }}>
+        <div className="hp-section-pad hp-concept-grid" style={{ maxWidth: "1280px", margin: "0 auto", paddingTop: "80px", paddingBottom: "80px" }}>
           <div>
             <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", color: C.accent, marginBottom: "10px", display: "block" }}>
               // Why GATEprep Blog
             </span>
-            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "40px", fontWeight: 900, letterSpacing: "-1px", lineHeight: 1.1, marginBottom: "20px" }}>
+            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(28px,3vw,40px)", fontWeight: 900, letterSpacing: "-1px", lineHeight: 1.1, marginBottom: "20px" }}>
               Not <em style={{ color: C.accent, fontStyle: "italic" }}>notes.</em><br />Understanding.
             </h2>
             <p style={{ color: C.muted, fontSize: "16px", lineHeight: 1.75, marginBottom: "32px" }}>
               Every article is built around how GATE actually tests a concept — not how textbooks explain it.
               We reverse-engineer PYQs to find the exact mental model you need.
             </p>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "14px", marginBottom: "40px" }}>
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "14px", marginBottom: "40px", paddingLeft: 0 }}>
               {[
                 "Every concept mapped to its GATE weightage & frequency",
                 "Step-by-step PYQ walkthroughs, not just answers",
@@ -334,8 +405,8 @@ export default async function HomePage() {
                 "Common traps and how the paper setters think",
                 "Spaced repetition flashcards linked to every article",
               ].map((item) => (
-                <li key={item} style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "15px", color: C.text }}>
-                  <span style={{ color: C.accent, fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px" }}>→</span>
+                <li key={item} style={{ display: "flex", alignItems: "flex-start", gap: "12px", fontSize: "15px", color: C.text }}>
+                  <span style={{ color: C.accent, fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", flexShrink: 0, marginTop: "3px" }}>→</span>
                   {item}
                 </li>
               ))}
@@ -345,7 +416,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: "32px", fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", lineHeight: 2 }}>
+          <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: "32px", fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", lineHeight: 2, overflowX: "auto" }}>
             <div style={{ color: C.accent, fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>GATE CS Syllabus 2026/</div>
             {[
               { text: "├── Algorithms/", color: C.muted },
@@ -363,7 +434,7 @@ export default async function HomePage() {
               { text: "├── TOC/", color: C.muted },
               { text: "└── CO & Architecture/", color: C.muted },
             ].map((line, i) => (
-              <div key={i} style={{ color: line.color }}>{line.text}</div>
+              <div key={i} style={{ color: line.color, whiteSpace: "pre" }}>{line.text}</div>
             ))}
             <div style={{ marginTop: "8px", fontSize: "11px", color: C.muted }}>
               <span style={{ color: C.green }}>✓ done</span>&nbsp;&nbsp;
@@ -375,26 +446,26 @@ export default async function HomePage() {
       </div>
 
       {/* RECENT ARTICLES */}
-      <section style={{ maxWidth: "1280px", margin: "0 auto", padding: "80px 96px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "48px" }}>
+      <section className="hp-section-pad" style={{ maxWidth: "1280px", margin: "0 auto", paddingTop: "80px", paddingBottom: "80px" }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "48px", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", color: C.accent, marginBottom: "10px", display: "block" }}>
               // Latest Posts
             </span>
-            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "36px", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1.15 }}>Fresh Off the Press</h2>
+            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(28px,3vw,36px)", fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1.15 }}>Fresh Off the Press</h2>
           </div>
           <Link href="/blog" style={{ color: C.muted, textDecoration: "none", fontSize: "13px", fontWeight: 500 }}>View archive →</Link>
         </div>
 
         <div style={{ border: `1px solid ${C.border}` }}>
           {recentPosts.map((post, i) => (
-            <Link key={post.slug} href={`/blog/${post.slug}`} style={{ textDecoration: "none", color: "inherit", display: "grid", gridTemplateColumns: "60px 1fr auto", gap: "24px", alignItems: "center", padding: "24px 28px", borderBottom: i < recentPosts.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ fontFamily: "var(--font-playfair), serif", fontSize: "36px", fontWeight: 900, color: C.border, lineHeight: 1 }}>
+            <Link key={post.slug} href={`/blog/${post.slug}`} className="hp-recent-row" style={{ textDecoration: "none", color: "inherit", borderBottom: i < recentPosts.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 900, color: C.border, lineHeight: 1 }}>
                 {String(i + 1).padStart(2, "0")}
               </div>
               <div>
                 <div style={{ fontSize: "16px", fontWeight: 500, color: C.text, marginBottom: "4px", lineHeight: 1.4 }}>{post.title}</div>
-                <div style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", color: C.muted, display: "flex", gap: "16px" }}>
+                <div style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", color: C.muted, display: "flex", gap: "16px", flexWrap: "wrap" }}>
                   {post.category && (
                     <span style={{ color: catColors[post.category]?.color ?? C.muted, textTransform: "uppercase", fontSize: "11px" }}>
                       {catColors[post.category]?.label ?? post.category}
@@ -405,21 +476,21 @@ export default async function HomePage() {
                   {post.difficulty && <DiffBadge difficulty={post.difficulty} />}
                 </div>
               </div>
-              <span style={{ color: C.muted, fontSize: "18px" }}>→</span>
+              <span className="hp-recent-arrow" style={{ color: C.muted, fontSize: "18px" }}>→</span>
             </Link>
           ))}
         </div>
       </section>
 
       {/* NEWSLETTER */}
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 96px 80px" }}>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, padding: "64px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "64px", alignItems: "center", position: "relative", overflow: "hidden" }}>
+      <div className="hp-section-pad" style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "80px" }}>
+        <div className="hp-newsletter-grid hp-newsletter-pad" style={{ background: C.surface, border: `1px solid ${C.border}`, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: "-80px", right: "-80px", width: "300px", height: "300px", background: "radial-gradient(circle, rgba(245,166,35,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
           <div>
             <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", color: C.accent, marginBottom: "16px", display: "block" }}>
               // Weekly Digest
             </span>
-            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "36px", fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.5px" }}>
+            <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(26px,3vw,36px)", fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.5px" }}>
               One concept.<br />Every <span style={{ color: C.accent, fontStyle: "italic" }}>Sunday.</span>
             </h2>
             <p style={{ color: C.muted, fontSize: "15px", marginTop: "16px", lineHeight: 1.7 }}>
@@ -427,8 +498,8 @@ export default async function HomePage() {
             </p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex" }}>
-              <input type="email" placeholder="your@email.com" style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, borderRight: "none", color: C.text, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "15px", padding: "14px 20px", outline: "none" }} />
+            <div className="hp-newsletter-input-row">
+              <input type="email" placeholder="your@email.com" style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "15px", padding: "14px 20px", outline: "none" }} />
               <button style={{ background: C.accent, color: "#000", border: "none", padding: "14px 28px", fontFamily: "var(--font-dm-sans), sans-serif", fontSize: "14px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                 Subscribe Free →
               </button>
@@ -442,8 +513,8 @@ export default async function HomePage() {
 
       {/* FOOTER */}
       <footer style={{ borderTop: `1px solid ${C.border}`, background: C.surface }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 96px 32px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "48px", marginBottom: "48px" }}>
+        <div className="hp-footer-pad" style={{ maxWidth: "1280px", margin: "0 auto" }}>
+          <div className="hp-footer-grid">
             <div>
               <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", marginBottom: "16px" }}>
                 <div style={{ width: "32px", height: "32px", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-ibm-plex-mono), monospace", fontWeight: 600, fontSize: "14px", color: "#000", clipPath: "polygon(0 0, 85% 0, 100% 15%, 100% 100%, 15% 100%, 0 85%)" }}>GP</div>
@@ -474,7 +545,7 @@ export default async function HomePage() {
               <Link href="/login" style={{ display: "block", color: C.accent, textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Start Free Trial →</Link>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "32px", borderTop: `1px solid ${C.border}`, fontSize: "13px", color: C.muted, fontFamily: "var(--font-ibm-plex-mono), monospace" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", paddingTop: "32px", borderTop: `1px solid ${C.border}`, fontSize: "13px", color: C.muted, fontFamily: "var(--font-ibm-plex-mono), monospace" }}>
             <span>© 2026 GATEprep · Prefrontal Labs · Bangalore, India</span>
             <span>Built with obsession for GATE CS 2026</span>
           </div>

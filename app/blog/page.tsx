@@ -68,14 +68,29 @@ export default async function BlogListPage({
   const activeCategory = searchParams.category ?? null;
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "64px 96px" }}>
+    <div style={{ maxWidth: "1280px", margin: "0 auto" }}>
+      <style>{`
+        .blp-pad { padding: 64px 96px; }
+        .blp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: ${C.border}; }
+        .blp-featured { grid-column: span 2; grid-row: span 2; }
+        @media (max-width: 1024px) {
+          .blp-pad { padding: 48px 48px; }
+          .blp-grid { grid-template-columns: repeat(2,1fr); }
+          .blp-featured { grid-column: span 1; grid-row: span 1; }
+        }
+        @media (max-width: 768px) {
+          .blp-pad { padding: 32px 20px; }
+          .blp-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
+      <div className="blp-pad">
       {/* Header */}
       <div style={{ marginBottom: "48px" }}>
         <span style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase", color: C.accent, marginBottom: "12px", display: "block" }}>
           // GATEprep Blog
         </span>
-        <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "48px", fontWeight: 900, letterSpacing: "-1.5px", lineHeight: 1.05, marginBottom: "16px" }}>
+        <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "clamp(36px,5vw,48px)", fontWeight: 900, letterSpacing: "-1.5px", lineHeight: 1.05, marginBottom: "16px" }}>
           CS Concepts,<br /><span style={{ color: C.accent, fontStyle: "italic" }}>Cracked.</span>
         </h1>
         <p style={{ color: C.muted, fontSize: "17px", maxWidth: "520px", lineHeight: 1.7 }}>
@@ -114,7 +129,7 @@ export default async function BlogListPage({
           </p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "2px", background: C.border }}>
+        <div className="blp-grid">
           {allPosts.map((post, i) => {
             const cat = catColors[post.category ?? ""];
             const diff = diffColors[post.difficulty ?? ""];
@@ -123,10 +138,8 @@ export default async function BlogListPage({
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                style={{
-                  textDecoration: "none",
-                  ...(isFeatured ? { gridColumn: "span 2", gridRow: "span 2" } : {}),
-                }}
+                className={isFeatured ? "blp-featured" : ""}
+                style={{ textDecoration: "none" }}
               >
                 <div style={{
                   background: isFeatured ? C.surface : C.bg,
@@ -170,6 +183,7 @@ export default async function BlogListPage({
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }
